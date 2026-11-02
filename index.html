@@ -676,7 +676,7 @@ import {getAuth,onAuthStateChanged,signInWithPopup,GoogleAuthProvider,signOut} f
 import {getFirestore,doc,getDoc,runTransaction,setDoc} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 const app=initializeApp({apiKey:"AIzaSyA1FzNnSuPfNx_QBGWeIxX_JHz-zJYUBWY",authDomain:"phaeng-painel.firebaseapp.com",projectId:"phaeng-painel",storageBucket:"phaeng-painel.firebasestorage.app",messagingSenderId:"1066315951786",appId:"1:1066315951786:web:34b8c5a96c19e01d872ad3"});
 const auth=getAuth(app),fs=getFirestore(app);
-const DONO='raphap93@gmail.com',CONTAB=['flavia87@gmail.com'];
+const DONO='raphap93@gmail.com',CONTAB=['flavi87@gmail.com'];
 const $=id=>document.getElementById(id);
 let started=false;
 const roleOf=e=>{e=(e||'').toLowerCase();return e===DONO?'dono':CONTAB.includes(e)?'contab':null};
