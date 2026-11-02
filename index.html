@@ -415,6 +415,7 @@ body.ro .tab[data-tab=pessoal],body.ro .tab[data-tab=insights],body.ro .tab[data
       <button class="tab" data-tab="pessoal">Pessoal e pró-labore</button>
     </nav>
     <div class="top-actions"><span class="sync" id="syncPill" hidden></span>
+      <button class="icon-btn" id="btnSyncNow" hidden aria-label="Sincronizar dados" title="Sincronizar dados"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 0 0-14-4M4 4v4h4M4 13a8 8 0 0 0 14 4M20 20v-4h-4"/></svg><span class="t" id="syncNowTxt">Sincronizar</span></button>
       <button class="icon-btn sq" id="btnHide" aria-label="Ocultar valores" aria-pressed="false" title="Ocultar valores">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
@@ -711,6 +712,30 @@ function makeApi(user){
     }
   };
 }
+
+/* sincronizar dados: pede a leitura das pastas (planilha -> painel em ~1 min; leitura de documentos novos em até 1 h) */
+const fmtDH=iso=>{try{const d=new Date(iso);return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}catch(_){return ''}};
+async function mostraAtualizado(){
+  const t=$('syncNowTxt');if(!t)return;
+  try{const f=await lerDoc('empresa','feed');const p=await lerDoc('empresa','pedido');
+    const base=f&&f.atualizado;t.textContent='Sincronizar';
+    $('btnSyncNow').title='Dados atualizados em '+(base?fmtDH(base):'—')+(p&&p.estado==='pendente'?' · pedido em andamento':'');
+    return base}catch(_){}
+}
+async function pedirSync(user){
+  const b=$('btnSyncNow'),t=$('syncNowTxt');if(b.disabled)return;
+  b.disabled=true;t.textContent='Pedindo…';
+  try{
+    const antes=await mostraAtualizado();
+    await setDoc(doc(fs,'empresa','pedido'),{ts:new Date().toISOString(),por:user.email,estado:'pendente'});
+    t.textContent='Sincronizando…';
+    for(let i=0;i<9;i++){await new Promise(r=>setTimeout(r,20000));
+      const p=await lerDoc('empresa','pedido');
+      if(p&&p.estado&&p.estado!=='pendente'){location.reload();return}}
+    t.textContent='Pedido enviado';
+    setTimeout(()=>{t.textContent='Sincronizar';b.disabled=false;mostraAtualizado()},4000);
+  }catch(e){t.textContent='Falhou';setTimeout(()=>{t.textContent='Sincronizar';b.disabled=false},3000)}
+}
 function showLogin(msg,err){$('phLogin').hidden=false;$('phSair').hidden=true;if(msg)$('phlMsg').textContent=msg;$('phlErr').textContent=err||'';$('phlBtn').disabled=false}
 onAuthStateChanged(auth,async user=>{
   if(!user){started=false;showLogin();return}
@@ -718,6 +743,7 @@ onAuthStateChanged(auth,async user=>{
     await signOut(auth);showLogin('Acesso restrito.',user.email+' não tem permissão para este painel.');return}
   $('phLogin').hidden=true;$('phSair').hidden=false;$('phSair').textContent='Sair ('+user.email+')';
   if(!started){started=true;const api=makeApi(user);window.__fb=api;window.__phReady(api)}
+  if(roleOf(user.email)==='dono'){$('btnSyncNow').hidden=false;$('btnSyncNow').onclick=()=>pedirSync(user);mostraAtualizado()}
 });
 $('phlBtn').onclick=async()=>{
   $('phlBtn').disabled=true;$('phlErr').textContent='';
