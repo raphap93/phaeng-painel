@@ -396,7 +396,7 @@ dialog.resumo{width:min(900px,calc(100vw - 24px));max-height:calc(100dvh - 24px)
 .cr-h{cursor:pointer;list-style:none}.cr-h::-webkit-details-marker{display:none}.cr-h::before{content:"▸ ";color:var(--muted)}details[open]>.cr-h::before{content:"▾ "}
 .cap1::first-letter{text-transform:uppercase}
 .sync{align-self:center;font-size:12.5px;font-weight:600;padding:5px 10px;border-radius:999px;background:var(--sage-l);color:var(--muted);white-space:nowrap}.sync.ok{color:var(--green)}.sync.bad{background:#fdeae5;color:var(--rust)}.sync.busy{color:var(--blue)}
-body.ro .tab[data-tab=pessoal],body.ro .tab[data-tab=insights],body.ro .tab[data-tab=agenda],body.ro .tab[data-tab=cobr],body.ro .tab[data-tab=entregas]{display:none}body.ro #btnAg,body.ro #btnLancNovo{display:none}
+body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMetas,body.ro #btnNew,body.ro #btnCfg{display:none}body.ro #btnAg,body.ro #btnLancNovo{display:none}
 @media (max-width:860px){.top-actions .sync{display:none}}
 </style>
 </head>
@@ -688,7 +688,7 @@ function makeApi(user){
     async apiLoad(){
       const [ef,ed]=await Promise.all([lerDoc('empresa','feed'),lerDoc('empresa','db')]);
       const out={email:user.email,role,feed:pj(ef),db:pj(ed),versao:(ed&&ed.versao)||0};
-      if(role==='dono'){
+      if(role==='dono'||role==='contab'){
         const [pf,pd]=await Promise.all([lerDoc('pessoal','feed'),lerDoc('pessoal','db')]);
         out.feedPessoal=pj(pf);out.dbPessoal=pj(pd);out.versaoPessoal=(pd&&pd.versao)||0;
       }
