@@ -852,10 +852,15 @@ const hasFeed=!!(FEED.obras.length||FEED.lanc.length||FEED.entregas.length);
 let db=loadDb()||(hasFeed?emptyDb():demoDb());
 db.config=db.config||{saldoInicial:{PHAENG:0,HABITTA:0}};db.config.metas=db.config.metas||{};db.config.regras=db.config.regras||{};db.obras=db.obras||[];db.entregas=db.entregas||[];
 const live=()=>!db.demo;
-const L=()=>live()?db.lanc.concat(FEED.lanc):db.lanc;
+/* obras anteriores ao ano mínimo ficam fora das contas (controle menos rigoroso) */
+const anoMin=()=>{const v=db.config&&db.config.anoMin;return (v===undefined||v===null||v==='')?2026:(Number(v)||0)};
+const foraSet=()=>{const s=new Set();if(!live())return s;const m=anoMin();FEED.obras.concat(db.obras).forEach(o=>{if(o.ano&&Number(o.ano)<m)s.add(o.nome)});return s};
+const semFora=a=>{const f=foraSet();return f.size?a.filter(x=>!x.obra||!f.has(x.obra)):a};
+const L=()=>live()?semFora(db.lanc.concat(FEED.lanc)):db.lanc;
 const PS=()=>live()?db.pessoal.concat(FEED.pessoal):db.pessoal;
-const OBRAS=()=>live()?FEED.obras.concat(db.obras):db.obras;
-const ENTR=()=>live()?FEED.entregas.concat(db.entregas):db.entregas;
+const OBRAS=()=>live()?(()=>{const f=foraSet();return FEED.obras.concat(db.obras).filter(o=>!f.has(o.nome))})():db.obras;
+const ENTR=()=>live()?semFora(FEED.entregas.concat(db.entregas)):db.entregas;
+const OBRAS_FORA=()=>live()?FEED.obras.concat(db.obras).filter(o=>foraSet().has(o.nome)):[];
 const isAuto=x=>typeof x.id==='string'&&x.id.startsWith('a:');
 let syncHook=null;
 function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){mem=db}if(syncHook)syncHook()}
@@ -1528,10 +1533,10 @@ const addDays=(s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);r
 const dayDiff=(a,b)=>Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5);
 const AGS={ym:todayStr().slice(0,7),sel:todayStr()};
 function cronoAjustado(c){const a=db.config.ajCrono[c.id];return a?{...c,inicio:a.inicio,fim:a.fim,motivo:a.motivo,atraso:dayDiff(c.fim,a.fim),ajust:true}:{...c,atraso:0}}
-function CRONO(){return (live()?(FEED.cronograma||[]):[]).map(cronoAjustado).filter(c=>S.obra===''||S.obra==='__empresa'||c.obra===S.obra)}
+function CRONO(){return semFora(live()?(FEED.cronograma||[]):[]).map(cronoAjustado).filter(c=>S.obra===''||S.obra==='__empresa'||c.obra===S.obra)}
 function agItens(from,to){
   const out=[];
-  const todos=(live()?(FEED.agenda||[]):[]).concat(db.agenda);
+  const todos=semFora((live()?(FEED.agenda||[]):[]).concat(db.agenda));
   todos.forEach(a=>{const dt=db.config.agData&&db.config.agData[a.id]||a.data;if(dt&&dt>=from&&dt<=to&&a.status!=='cancelada')out.push({...a,data:dt,feita:!!(a.status==='feita'||db.config.feitas[a.id])})});
   // regra semanal: toda sexta, relatório e pagamento da mão de obra das obras ativas
   const hoje=todayStr();
@@ -1560,7 +1565,7 @@ function renderAgenda(){
   $('#agDiaT').textContent=dd.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   $('#agDia').innerHTML=dl.length?dl.map(agChip).join(''):'<div class="empty"><b>Dia livre</b>Nenhum compromisso neste dia.</div>';
   // sem data
-  const sd=(live()?(FEED.agenda||[]):[]).concat(db.agenda).filter(a=>!a.data&&!(a.status==='feita'||db.config.feitas[a.id])&&(S.obra===''||S.obra==='__empresa'||a.obra===S.obra));
+  const sd=semFora((live()?(FEED.agenda||[]):[]).concat(db.agenda)).filter(a=>!a.data&&!(a.status==='feita'||db.config.feitas[a.id])&&(S.obra===''||S.obra==='__empresa'||a.obra===S.obra));
   $('#agSem').innerHTML=sd.length?sd.map(a=>agChip({...a,feita:false})).join(''):'<div class="empty"><b>Nada sem data</b>Pendências sem data definida aparecem aqui.</div>';
   $('#agSemT').textContent='A definir ('+sd.length+')';
   // legenda
@@ -1791,11 +1796,13 @@ function openCfg(){
    <p class="note">Os dados ficam salvos neste navegador. Para usar em outro aparelho, exporte o backup aqui e importe lá.</p>
    <div class="fgrid"><div class="f"><label for="sP">Saldo inicial da PHAENG</label><input id="sP" inputmode="decimal" value="${String(db.config.saldoInicial.PHAENG||0).replace('.',',')}"></div>
    <div class="f"><label for="sH">Saldo inicial da Habitta</label><input id="sH" inputmode="decimal" value="${String(db.config.saldoInicial.HABITTA||0).replace('.',',')}"></div></div>
+   <div class="fgrid"><div class="f"><label for="sAno">Considerar obras a partir do ano</label><select id="sAno">${[2020,2021,2022,2023,2024,2025,2026,2027].map(y=>`<option value="${y}"${anoMin()===y?' selected':''}>${y}</option>`).join('')}</select></div></div>
+   <p class="note">${OBRAS_FORA().length?`Fora das contas: ${OBRAS_FORA().map(o=>o.nome).join(', ')}.`:'Nenhuma obra está fora das contas.'} Pastas anteriores ao ano escolhido não entram em saldo, entradas, saídas, cobranças, cronograma nem agenda.</p>
    <div class="dlg-actions" style="justify-content:flex-start"><button class="btn ghost" id="cExp">Exportar backup</button><button class="btn ghost" id="cImp">Importar backup</button><input type="file" id="cFile" accept="application/json" hidden></div>
    <div class="dlg-actions" style="justify-content:flex-start"><button class="btn ghost" id="cComo">Como alimentar o painel</button></div>
    <div class="dlg-actions" style="justify-content:flex-start"><button class="btn ghost" id="cDemo">Ver dados de exemplo</button><button class="btn ghost" id="cZero">Apagar tudo e começar do zero</button></div>
    <div class="dlg-actions"><button class="btn" id="cOk">Salvar ajustes</button></div>`;
-  $('#cOk').onclick=()=>{db.config.saldoInicial.PHAENG=parseMoney($('#sP').value)||0;db.config.saldoInicial.HABITTA=parseMoney($('#sH').value)||0;save();render();$('#dlgCfg').close();toast('Ajustes salvos')};
+  $('#cOk').onclick=()=>{db.config.anoMin=Number($('#sAno').value)||2026;db.config.saldoInicial.PHAENG=parseMoney($('#sP').value)||0;db.config.saldoInicial.HABITTA=parseMoney($('#sH').value)||0;save();render();$('#dlgCfg').close();toast('Ajustes salvos')};
   $('#cExp').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(db,null,1)],{type:'application/json'}));a.download='phaeng-financeiro-'+todayStr()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),2000)};
   $('#cImp').onclick=()=>$('#cFile').click();$('#cComo').onclick=()=>{$('#dlgCfg').close();openComo()};
   $('#cFile').onchange=e=>{const fl=e.target.files[0];if(!fl)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.lanc)||!Array.isArray(d.pessoal))throw 0;db=d;db.demo=!!d.demo;db.config=db.config||{saldoInicial:{}};db.config.metas=db.config.metas||{};db.config.regras=db.config.regras||{};db.obras=db.obras||[];db.entregas=db.entregas||[];save();S.endYm=defaultEnd();S.sel=null;$('#dlgCfg').close();render();toast('Backup importado')}catch(x){toast('Arquivo inválido. Use um backup exportado por este painel.')}};r.readAsText(fl)};
