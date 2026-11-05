@@ -686,8 +686,9 @@ function makeApi(user){
   const role=roleOf(user.email);
   return {
     async apiLoad(){
-      const [ef,ed]=await Promise.all([lerDoc('empresa','feed'),lerDoc('empresa','db')]);
+      const [ef,ed,eg]=await Promise.all([lerDoc('empresa','feed'),lerDoc('empresa','db'),lerDoc('empresa','gcal').catch(()=>null)]);
       const out={email:user.email,role,feed:pj(ef),db:pj(ed),versao:(ed&&ed.versao)||0};
+      const ge=pj(eg);if(Array.isArray(ge)){out.feed=out.feed||{};out.feed.agenda=(out.feed.agenda||[]).concat(ge)}
       if(role==='dono'||role==='contab'){
         const [pf,pd]=await Promise.all([lerDoc('pessoal','feed'),lerDoc('pessoal','db')]);
         out.feedPessoal=pj(pf);out.dbPessoal=pj(pd);out.versaoPessoal=(pd&&pd.versao)||0;
