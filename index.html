@@ -412,7 +412,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   .tabs::before{content:"SEÇÕES"}
   .top-actions::before{content:"FERRAMENTAS"}
   .tab{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:14px;text-align:left;white-space:normal;line-height:1.25}
-  .tab svg{width:18px;height:18px;flex:none}
+  .top .tabs .tab svg{display:block;width:18px;height:18px;flex:none}
   .tab:hover{background:rgba(255,255,255,.75)}
   .top-actions{margin:auto 0 0;flex-direction:column;gap:2px}
   .top-actions .sync{order:9;margin:6px 12px 0}
@@ -429,6 +429,30 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   #phSair{left:14px;bottom:14px;width:calc(var(--side) - 28px);border-radius:14px;text-align:left;padding:10px 12px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 }
 @media print{body{padding-left:0!important}}
+
+/* ===== filtros compactos: obra vira lista suspensa, tudo numa linha ===== */
+.controls{padding:16px 0 4px;gap:10px}
+.ctl-row{gap:10px 10px}
+.period{gap:6px}.period .lbl{font-size:14px;min-width:92px}
+.seg button{padding:7px 8px;font-size:14px}
+.tab svg{display:none}
+.resumo-btn{font-size:0;gap:0;padding:0 11px;width:40px;justify-content:center}
+.resumo-btn svg{width:18px;height:18px}
+.chips{position:relative;display:block}
+.chips-l{display:none}
+.obra-trig{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-weight:500;max-width:260px}
+.obra-trig b{display:none}
+.obra-trig{max-width:230px}
+.obra-trig span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.obra-trig svg{width:14px;height:14px;flex:none;transition:transform .2s}
+.chips.open .obra-trig{border-color:var(--ink)}
+.chips.open .obra-trig svg{transform:rotate(180deg)}
+.chips .chips-w{display:none;position:absolute;z-index:25;top:46px;left:0;width:min(340px,86vw);max-height:min(60vh,420px);overflow:auto;flex-direction:column;flex-wrap:nowrap;gap:2px;padding:8px;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 22px 50px -18px rgba(0,0,0,.35)}
+.chips.open .chips-w{display:flex}
+.chips .chips-w .chip-btn{border:0;border-radius:12px;padding:9px 12px;width:100%;background:transparent;color:var(--ink)}
+.chips .chips-w .chip-btn:hover{background:var(--sage-l)}
+.chips .chips-w .chip-btn[aria-pressed=true]{background:var(--ink);color:#fff}
+.ruler{margin-top:2px}
 </style>
 </head>
 <body>
@@ -661,6 +685,24 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   agenda:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>'};
   document.querySelectorAll('#bnav button[data-tab]').forEach(b=>{const s=b.querySelector('svg');if(s)ic[b.dataset.tab]=s.innerHTML});
   document.querySelectorAll('#tabs .tab').forEach(t=>{const p=ic[t.dataset.tab]||ic.visao;t.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>')});
+})();
+</script>
+<script>
+/* obra: lista suspensa na mesma linha dos filtros */
+(function(){
+  const row=document.getElementById('obraRow'),ctl=document.querySelector('.ctl-row'),list=document.getElementById('obraChips'),rs=document.getElementById('btnResumo');
+  if(!row||!ctl||!list)return;
+  ctl.insertBefore(row,rs);
+  const trig=document.createElement('button');trig.type='button';trig.className='obra-trig';trig.setAttribute('aria-haspopup','listbox');trig.setAttribute('aria-expanded','false');
+  trig.innerHTML='<b>Obra</b><span id="obraTrigTxt">Todas as obras</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  row.insertBefore(trig,list);
+  const fecha=()=>{row.classList.remove('open');trig.setAttribute('aria-expanded','false')};
+  const atual=()=>{const b=list.querySelector('[aria-pressed=true]');document.getElementById('obraTrigTxt').textContent=b?b.textContent:'Todas as obras'};
+  new MutationObserver(atual).observe(list,{childList:true,subtree:true,attributes:true,attributeFilter:['aria-pressed']});atual();
+  trig.addEventListener('click',e=>{e.stopPropagation();const o=row.classList.toggle('open');trig.setAttribute('aria-expanded',o)});
+  list.addEventListener('click',()=>setTimeout(fecha,0));
+  document.addEventListener('click',e=>{if(!row.contains(e.target))fecha()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')fecha()});
 })();
 </script>
 <dialog id="dlgLanc"><form class="dlg" id="fLanc" method="dialog" novalidate></form></dialog>
