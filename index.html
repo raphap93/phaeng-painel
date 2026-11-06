@@ -430,6 +430,28 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
 }
 @media print{body{padding-left:0!important}}
 
+/* ===== bloco "O que pede atenção" e situação das obras ===== */
+.attn{background:linear-gradient(135deg,#1d2a22,#26362b);color:#fff;border-radius:26px;padding:20px 24px 14px;box-shadow:0 18px 40px -24px rgba(20,40,20,.6)}
+.attn-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.attn-h small{display:block;font:600 11px/1 var(--text);letter-spacing:.14em;text-transform:uppercase;color:#a9bba9;margin-bottom:6px}
+.attn-h h2{font-size:22px;color:#fff}
+.attn-n{background:#fff;color:var(--ink);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;white-space:nowrap}
+.attn-l{display:grid;background:#fff;color:var(--ink);border-radius:18px;overflow:hidden}
+.attn-i{display:flex;align-items:center;gap:12px;padding:13px 16px;text-align:left;width:100%;border-top:1px solid var(--line-2);transition:background .2s}
+.attn-i:first-child{border-top:0}
+.attn-i:hover{background:var(--sage-l)}
+.attn-i i{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;font-style:normal;font-weight:700;font-size:14px}
+.attn-i i.bad{background:var(--rust-l);color:var(--rust)}.attn-i i.warn{background:#fdf3d9;color:#a06b00}.attn-i i.info{background:var(--blue-l);color:var(--blue)}
+.attn-i span{flex:1;min-width:0;font-size:14.5px}.attn-i span b{font-weight:600}.attn-i span small{display:block;color:var(--muted);font-size:12.5px}
+.attn-i svg{width:16px;height:16px;color:var(--muted);flex:none}
+.attn-ok{padding:18px 16px;color:var(--muted);font-size:14.5px}
+.sit-seg{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 12px}
+.sit-seg button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13.5px;font-weight:500;color:var(--muted)}
+.sit-seg button b{font-weight:600;margin-left:4px}
+.sit-seg button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.cart-row .cn small{display:inline-block;margin-left:8px;font:600 11px var(--text);letter-spacing:.02em;padding:2px 8px;border-radius:999px;vertical-align:middle}
+.cart-row .cn small.and{background:var(--blue-l);color:var(--blue)}.cart-row .cn small.exe{background:var(--green-l);color:var(--green)}.cart-row .cn small.orc{background:#fdf3d9;color:#a06b00}
+
 /* ===== celular e telas estreitas: menu em "três pontinhos" ===== */
 #btnMenu{display:none}
 @media (max-width:999px){
@@ -539,6 +561,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
         </div>
       </div>
       <div class="kpis" id="kpis"></div>
+      <section class="attn rise" id="attn" style="--i:3" hidden aria-label="O que pede atenção"></section>
       <section class="panel rise" id="obraPanel" hidden style="--i:4">
         <div class="panel-head"><div><h2 id="obraTitle"></h2><p class="sub" id="obraSub"></p></div></div>
         <div class="stats" id="obraStats"></div>
@@ -546,6 +569,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
       </section>
       <section class="panel rise" id="carteira" hidden style="--i:4">
         <div class="panel-head"><div><h2>Carteira de obras</h2><p class="sub">Toque em uma obra para ver só as entradas e saídas dela</p></div></div>
+        <div class="sit-seg" id="sitSeg" role="group" aria-label="Situação da obra"></div>
         <div class="cart" id="carteiraList"></div>
       </section>
       <div class="grid main-grid">
@@ -977,7 +1001,7 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){mem=db
 save();
 
 /* ---------- estado ---------- */
-const S={tab:'visao',ent:'ALL',obra:'',span:6,endYm:null,sel:null,tipo:'all',st:'all',q:'',pq:'',pcat:'all'};
+const S={situ:'todas',tab:'visao',ent:'ALL',obra:'',span:6,endYm:null,sel:null,tipo:'all',st:'all',q:'',pq:'',pcat:'all'};
 try{const p=JSON.parse(localStorage.getItem(KEY+'-ui')||'{}');if(p.ent)S.ent=p.ent;if(p.hide)document.body.classList.add('hide')}catch(e){}
 function defaultEnd(){
   let max='';L().forEach(l=>{if(l.status==='pago'&&l.data.slice(0,7)>max)max=l.data.slice(0,7)});PS().forEach(p=>{if(p.data.slice(0,7)>max)max=p.data.slice(0,7)});
@@ -1235,12 +1259,35 @@ function renderObraPanels(){
   }
   const cr=$('#carteiraList');
   if(!$('#carteira').hidden){
-    cr.innerHTML=OBRAS().map(o=>{const s=obraStats(o.nome),av=lastAvanco(o.nome),p=s.contrato?Math.min(1,s.rec/s.contrato):0;
-      return `<button class="cart-row" data-obra="${esc(o.nome)}"><span class="cn">${esc(o.nome)}</span><span class="num sens cv">${s.contrato?fmt(s.contrato):'Sem contrato'}</span><span class="cbar"><i style="width:${p*100}%"></i></span><span class="cm">${s.contrato?'Recebido '+pct(p):'Recebido '+fmt(s.rec)}${av!==null?' – avanço '+av+'%':''}</span></button>`}).join('');
+    const obs=OBRAS(),cnt={todas:obs.length,and:0,exe:0,orc:0};obs.forEach(o=>cnt[sitObra(o)]++);
+    $('#sitSeg').innerHTML=[['todas','Todas'],['and','Em andamento'],['exe','Executadas'],['orc','Orçamentos e projetos']].filter(x=>x[0]==='todas'||cnt[x[0]]).map(x=>`<button data-sit="${x[0]}" aria-pressed="${S.situ===x[0]}">${x[1]}<b>${cnt[x[0]]}</b></button>`).join('');
+    $('#sitSeg').hidden=!(cnt.exe||cnt.orc);
+    if(S.situ!=='todas'&&!cnt[S.situ])S.situ='todas';
+    const SIT={and:'Em andamento',exe:'Executada',orc:'Orçamento'};
+    cr.innerHTML=obs.filter(o=>S.situ==='todas'||sitObra(o)===S.situ).map(o=>{const s=obraStats(o.nome),av=lastAvanco(o.nome),p=s.contrato?Math.min(1,s.rec/s.contrato):0,st=sitObra(o);
+      return `<button class="cart-row" data-obra="${esc(o.nome)}"><span class="cn">${esc(o.nome)}<small class="${st}">${SIT[st]}</small></span><span class="num sens cv">${s.contrato?fmt(s.contrato):'Sem contrato'}</span><span class="cbar"><i style="width:${p*100}%"></i></span><span class="cm">${s.contrato?'Recebido '+pct(p):'Recebido '+fmt(s.rec)}${av!==null?' – avanço '+av+'%':''}</span></button>`}).join('')||'<div class="empty"><b>Nenhuma obra nesta situação</b></div>';
   }
 }
 
 /* ---------- visão geral ---------- */
+
+const sitObra=o=>encerrada(o)?'exe':/or[cç]ament|projeto|propost/i.test((o&&o.status)||'')?'orc':'and';
+function renderAtencao(ent,pv){
+  const el=$('#attn');if(!el)return;
+  const hoje=todayStr(),it=[];
+  if(pv.late>0)it.push({c:'bad',t:`<b>${fmt(pv.late)}</b> em cobranças atrasadas`,s:'Parcelas previstas com data já vencida',go:'cobr',m:'!'});
+  if(live()){const {deps}=notasPorObra();const pend=deps.filter(d=>d._st!=='ok'&&(ent==='ALL'||d.empresa===ent)&&matchObra(d));
+    if(pend.length)it.push({c:'warn',t:`<b>${pend.length}</b> depósito${pend.length>1?'s':''} sem nota fiscal`,s:`${fmt(pend.reduce((a,d)=>a+d._pend,0))} ainda a emitir`,go:'contab',m:'NF'})}
+  const ven=agItens(addDays(hoje,-30),addDays(hoje,-1)).filter(a=>!a.feita&&!a.regra);
+  if(ven.length)it.push({c:'bad',t:`<b>${ven.length}</b> compromisso${ven.length>1?'s':''} vencido${ven.length>1?'s':''}`,s:esc(ven.slice(0,2).map(a=>a.titulo).join(' · ')),go:'agenda',m:'!'});
+  {const g={};agItens(hoje,hoje).filter(a=>!a.feita).forEach(a=>(g[a.titulo]=g[a.titulo]||[]).push(a));
+   Object.keys(g).slice(0,4).forEach(k=>{const l=g[k],a=l[0],ob=l.map(x=>x.obra).filter(Boolean);
+     it.push({c:'info',t:`Hoje: <b>${esc(k)}</b>${l.length>1?` (${l.length})`:''}`,s:esc(l.length>1?ob.join(', '):(AG_TIPOS[a.tipo]||AG_TIPOS.outro)[0]+(a.obra?' – '+a.obra:'')),go:'agenda',m:'•'})})}
+  const arrow='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+  el.hidden=false;
+  el.innerHTML=`<div class="attn-h"><div><small>Hoje</small><h2>O que pede atenção</h2></div><span class="attn-n">${it.length?it.length+' ponto'+(it.length>1?'s':'')+' de atenção':'tudo em dia'}</span></div><div class="attn-l">`+
+    (it.length?it.map(x=>`<button class="attn-i" data-go="${x.go}"><i class="${x.c}">${x.m}</i><span>${x.t}${x.s?`<small>${x.s}</small>`:''}</span>${arrow}</button>`).join(''):'<div class="attn-ok">Nada pendente: sem cobranças atrasadas, notas por emitir ou compromissos de hoje.</div>')+'</div>';
+}
 function renderVisao(){
   const ent=S.ent,w=win(),A=agg(w,ent),fi=S.sel?[w.indexOf(S.sel)]:idxs(w),F=fi.map(i=>A[i]);
   const P=agg(prevFocus(),ent);
@@ -1252,6 +1299,7 @@ function renderVisao(){
   if(obraSel){$('#hKick').textContent='Depositado pelo proprietário em '+obraSel;countTo($('#hBig'),os.rec,fmt,1300)}
   else{$('#hKick').textContent=(S.obra==='__empresa'?'Resultado dos custos da empresa':'Saldo em caixa no fim de '+mFull(last));countTo($('#hBig'),S.obra==='__empresa'?net:saldo,S.obra==='__empresa'?sgn:fmt,1300)}
   const pv=previstos(ent);
+  renderAtencao(ent,pv);
   $('#hMeta').innerHTML=`<span class="pill dark">${S.sel?'Resultado de '+mFull(S.sel):'Resultado do período'}: <b class="num sens">${sgn(net)}</b></span>`+
     delta(net,agg(prevFocus(),ent).reduce((a,m)=>a+m.net,0),true)+(ent!=='ALL'?`<span class="pill dark">${EMP[ent]}</span>`:'');
   {const ob=OBRAS().filter(o=>!/conclu|executad/i.test(o.status||'')),avs=ob.map(o=>lastAvanco(o.nome)).filter(x=>x>0),avm=avs.length?Math.round(avs.reduce((a,b)=>a+b,0)/avs.length):0;
@@ -1937,6 +1985,8 @@ function go(tab){
 }
 $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));
 $('#obraChips').addEventListener('click',e=>{const b=e.target.closest('[data-obra]');if(b)pickObra(b.dataset.obra)});
+$('#attn').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)go(b.dataset.go)});
+$('#sitSeg').addEventListener('click',e=>{const b=e.target.closest('[data-sit]');if(b){S.situ=b.dataset.sit;render()}});
 $('#carteiraList').addEventListener('click',e=>{const b=e.target.closest('[data-obra]');if(b)pickObra(b.dataset.obra)});
 $('#segSpan').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.span=b.dataset.v==='total'?'total':+b.dataset.v;S.sel=null;render()});
 $('#btnResumo').onclick=openResumo;$('#btnPrint').onclick=()=>window.print();$('#btnResumoX').onclick=()=>$('#dlgResumo').close();
