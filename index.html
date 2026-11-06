@@ -430,6 +430,21 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
 }
 @media print{body{padding-left:0!important}}
 
+/* ===== celular e telas estreitas: menu em "três pontinhos" ===== */
+#btnMenu{display:none}
+@media (max-width:999px){
+  #btnMenu{display:inline-flex}
+  #btnMenu svg{width:20px;height:20px}
+  .top .wrap{flex-wrap:nowrap!important;height:60px!important;padding-top:0!important;padding-bottom:0!important}
+  .top .wrap .tabs{display:none!important}
+  body.menu-open .top .wrap .tabs{display:flex!important;flex-direction:column;position:absolute;top:calc(100% + 6px);left:12px;right:12px;width:auto;margin:0;padding:8px;gap:2px;order:0;overflow:visible;background:var(--surface);border:1px solid var(--line);border-radius:22px;box-shadow:0 26px 60px -20px rgba(0,0,0,.45)}
+  .top .tabs .tab{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;font-size:15.5px;text-align:left}
+  .top .tabs .tab svg{display:block;width:20px;height:20px;flex:none}
+  .top .tabs .tab:hover{background:var(--sage-l)}
+  body.menu-open::after{content:"";position:fixed;inset:0;z-index:25;background:rgba(20,24,20,.28)}
+  .top-actions{margin-left:auto}
+}
+
 /* ===== filtros compactos: obra vira lista suspensa, tudo numa linha ===== */
 .controls{padding:16px 0 4px;gap:10px}
 .ctl-row{gap:10px 10px}
@@ -474,6 +489,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
       <button class="icon-btn sq" id="btnHide" aria-label="Ocultar valores" aria-pressed="false" title="Ocultar valores">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
       </button>
+      <button class="icon-btn sq" id="btnMenu" aria-label="Menu" aria-expanded="false" title="Menu"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button>
       <button class="icon-btn" id="btnCfg" aria-label="Dados e ajustes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
         <span class="t">Dados</span>
@@ -703,6 +719,17 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   list.addEventListener('click',()=>setTimeout(fecha,0));
   document.addEventListener('click',e=>{if(!row.contains(e.target))fecha()});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')fecha()});
+})();
+</script>
+<script>
+/* menu de três pontinhos (celular) */
+(function(){
+  const b=document.getElementById('btnMenu');if(!b)return;
+  const set=o=>{document.body.classList.toggle('menu-open',o);b.setAttribute('aria-expanded',o)};
+  b.addEventListener('click',e=>{e.stopPropagation();set(!document.body.classList.contains('menu-open'))});
+  document.addEventListener('click',e=>{if(document.body.classList.contains('menu-open')&&!e.target.closest('#tabs'))set(false);else if(e.target.closest('#tabs .tab'))set(false)});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')set(false)});
+  window.addEventListener('resize',()=>{if(innerWidth>=1000)set(false)});
 })();
 </script>
 <dialog id="dlgLanc"><form class="dlg" id="fLanc" method="dialog" novalidate></form></dialog>
