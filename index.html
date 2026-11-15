@@ -2,6 +2,10 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<meta name="theme-color" content="#2740e8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PHAENG">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>PHAENG Financeiro</title>
 <meta name="theme-color" content="#fafaf8">
@@ -294,6 +298,26 @@ body.hide .num,body.hide .sens,body.hide .chart text,body.hide .tip,body.hide .h
 .h3{font-size:15px;margin-bottom:12px}
 .obra-split{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:28px;align-items:start}
 .obra-note{background:var(--sage-l);border-radius:var(--r-md);padding:16px;color:var(--ink-2);text-wrap:pretty}
+/* mao de obra por obra */
+.mdo{margin-top:28px;padding-top:24px;border-top:1px solid var(--line)}
+.mdo .sub{color:var(--muted);font-size:13.5px;margin:-6px 0 14px}
+.mdo-bar{height:10px;border-radius:99px;background:var(--line-2);overflow:hidden;margin:2px 0 6px}
+.mdo-bar i{display:block;height:100%;border-radius:99px;background:var(--green)}
+.mdo-bar.over i{background:var(--rust)}
+.mdo-cap{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:13px;margin-bottom:16px;flex-wrap:wrap}
+.mdo-rows{display:grid;gap:2px}
+.mdo-row{display:grid;grid-template-columns:minmax(110px,1.1fr) minmax(90px,1.3fr) minmax(120px,.9fr) minmax(110px,.8fr);gap:6px 16px;align-items:center;padding:10px 0;border-top:1px solid var(--line-2)}
+.mdo-row:first-child{border-top:0}
+.mdo-row.head{color:var(--muted);font-size:12.5px;padding:0 0 6px;border-top:0}
+.mdo-row .pn{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.mdo-row .pn small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+.mdo-row .pv{text-align:right}
+.mdo-row .pv small{display:block;color:var(--muted);font-size:12px}
+.mdo-row .falta{font-weight:600}
+.mdo-row .falta.ok{color:var(--green)}
+.mdo-row .falta.over{color:var(--rust)}
+.mdo-empty{background:var(--sage-l);border-radius:var(--r-md);padding:16px;color:var(--ink-2);text-wrap:pretty}
+@media(max-width:720px){.mdo-row{grid-template-columns:1fr 1fr}.mdo-row.head{display:none}.mdo-row .pn{grid-column:1/-1}.mdo-row .pv{text-align:left}}
 .cart{display:grid;gap:0}
 .cart-row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.9fr) minmax(0,1.3fr);grid-template-areas:"n v b" "n m m";gap:4px 16px;align-items:center;text-align:left;padding:14px 8px;border-top:1px solid var(--line-2);border-radius:12px;transition:background .2s}
 .cart-row:first-child{border-top:0}
@@ -399,6 +423,84 @@ dialog.resumo{width:min(900px,calc(100vw - 24px));max-height:calc(100dvh - 24px)
 body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMetas,body.ro #btnNew,body.ro #btnCfg{display:none}body.ro #btnAg,body.ro #btnLancNovo{display:none}
 @media (max-width:860px){.top-actions .sync{display:none}}
 
+/* ---------- aba Obras (cronograma, curva S, custo por etapa) ---------- */
+.ob-head{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.ob-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:12px;margin:0 0 16px}
+.ob-kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px}
+.ob-kpi span{display:block;font-size:.78rem;color:var(--muted,#6b6b6b)}.ob-kpi b{display:block;font-size:1.35rem;margin-top:4px}
+.ob-kpi small{display:block;margin-top:2px;font-size:.78rem}.ob-kpi .bad{color:var(--rust)}.ob-kpi .good{color:var(--green)}
+.ob-sec{margin:0 0 16px}.ob-sec h3{margin:0 0 4px}
+.gantt{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface)}
+.g-in{position:relative;min-width:720px}
+.g-row{display:grid;grid-template-columns:190px 1fr;align-items:center;border-top:1px solid var(--line);min-height:34px}
+.g-row:first-child{border-top:0}.g-row.g-h{font-size:.75rem;color:#6b6b6b;min-height:28px}
+.g-n{padding:6px 10px;font-size:.84rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;background:var(--surface);z-index:2}
+.g-t{position:relative;height:34px}
+.g-m{position:absolute;top:0;bottom:0;border-left:1px dashed var(--line);font-size:.7rem;color:#6b6b6b;padding-left:4px;line-height:28px}
+.g-bar{position:absolute;top:9px;height:16px;border-radius:5px;background:#c9cfe8;overflow:hidden;min-width:6px}
+.g-bar i{display:block;height:100%;background:var(--blue)}.g-bar.ok i{background:var(--green)}.g-bar.nd{background:#e4e4e0}
+.g-hoje{position:absolute;top:0;bottom:0;width:2px;background:var(--rust);z-index:3}
+.g-hoje b{position:absolute;top:2px;left:4px;font-size:.68rem;color:var(--rust);font-weight:600}
+.g-pct{position:absolute;top:9px;font-size:.72rem;line-height:16px;white-space:nowrap}
+.curvaS{width:100%;height:auto;display:block}
+.ob-leg{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;margin-top:6px}.ob-leg i{display:inline-block;width:18px;height:3px;vertical-align:middle;margin-right:6px}
+.ob-tb{width:100%;border-collapse:collapse;font-size:.86rem}.ob-tb th,.ob-tb td{padding:8px 10px;border-top:1px solid var(--line);text-align:right;white-space:nowrap}
+.ob-tb th:first-child,.ob-tb td:first-child{text-align:left;white-space:normal}.ob-tb th{font-weight:600;font-size:.76rem;color:#6b6b6b;border-top:0}
+.ob-tb .over{color:var(--rust);font-weight:600}.ob-wrap{overflow-x:auto}
+.ob-empty{padding:18px;border:1px dashed var(--line);border-radius:var(--r-md);color:#6b6b6b}
+@media(max-width:640px){.g-row{grid-template-columns:130px 1fr}.g-in{min-width:600px;--gn:130px}}
+
+.ob-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:16px}
+.ob-card{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;transition:transform .2s,box-shadow .2s;font:inherit;color:inherit}
+.ob-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.ob-card h3{margin:0;font-size:1.05rem;line-height:1.25}.ob-card .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.badge{display:inline-block;border-radius:999px;padding:3px 10px;font-size:.72rem;font-weight:600;white-space:nowrap;background:#e8ebfb;color:var(--blue)}
+.badge.ok{background:#dff1e8;color:var(--green)}.badge.bad{background:#f8e0da;color:var(--rust)}.badge.mut{background:#ececE8;color:#6b6b6b}
+.pbar{height:8px;border-radius:99px;background:#e6e6e1;overflow:hidden;position:relative}.pbar i{display:block;height:100%;background:var(--blue);border-radius:99px}.pbar b{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink)}
+.ob-card .row{display:flex;justify-content:space-between;font-size:.82rem;gap:8px}.ob-card .row span{color:#6b6b6b}
+.ob-fil{display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap}
+.ob-back{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px}.ob-back h2{margin:0;font-size:1.4rem}
+.ob-sub{display:flex;gap:8px;margin:0 0 16px;overflow-x:auto;padding-bottom:4px}
+.ob-split{display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:center}
+@media(max-width:640px){.ob-split{grid-template-columns:1fr;justify-items:center}}
+.ob-cost{display:grid;grid-template-columns:150px 1fr auto;gap:10px;align-items:center;font-size:.85rem;padding:5px 0}
+.g-bar.plan{top:5px;height:5px;background:#b9b9b2;border-radius:3px}.g-bar.plan i{display:none}
+.g-bar.real{top:15px;height:14px}.g-row{min-height:38px}.g-t{height:38px}.g-pct{top:15px}
+
+.kb{display:grid;grid-template-columns:repeat(3,minmax(240px,1fr));gap:14px;overflow-x:auto;align-items:start}
+.kb-col{background:#efefea;border-radius:var(--r-md);padding:10px;min-width:240px}
+.kb-h{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.85rem;padding:4px 6px 10px}.kb-h i{width:10px;height:10px;border-radius:50%}.kb-h span{margin-left:auto;font-weight:500;color:#6b6b6b}
+.kb-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 10px;box-shadow:0 1px 2px rgba(0,0,0,.05);display:flex;flex-direction:column;gap:8px}
+.kb-card b{font-size:.9rem;line-height:1.3}.kb-card.done{opacity:.85}
+.kb-meta{display:flex;justify-content:space-between;gap:8px;font-size:.76rem;color:#6b6b6b}.kb-meta .over{color:var(--rust);font-weight:600}
+.kb-vazio{color:#9a9a94;text-align:center;padding:10px}
+/* ---------- estilo Trello (Obras) ---------- */
+.ob-board{background:linear-gradient(135deg,#1d3a8a,#2f5bd6 55%,#4b7bec);border-radius:var(--r-lg);padding:18px;margin:0 0 20px}
+.ob-board .ob-back h2,.ob-board .ob-bt{color:#fff}.ob-board>.sub,.ob-board .ob-back .sub{color:rgba(255,255,255,.85)}
+.ob-board .chip-btn{background:rgba(255,255,255,.18);border-color:transparent;color:#fff}.ob-board .chip-btn[aria-pressed="true"]{background:#fff;color:#172b4d}
+.ob-bh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;color:#fff}.ob-bh h2{margin:0;font-size:1.3rem;color:#fff}
+.ob-bh .pl{background:rgba(255,255,255,.2);border-radius:8px;padding:5px 11px;font-size:.8rem}
+.tb{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:stretch}
+.tb-col{background:#ebecf0;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.tb-h{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:.9rem;padding:2px 6px;color:#172b4d}.tb-h span{font-weight:500;color:#6b778c;font-size:.78rem}
+.tc{display:flex;flex-direction:column;background:#fff;border:0;border-radius:10px;box-shadow:0 1px 1px rgba(9,30,66,.25);overflow:hidden;text-align:left;cursor:pointer;font:inherit;color:#172b4d;padding:0;transition:transform .15s,box-shadow .15s}
+.tc:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(9,30,66,.25)}
+.tc-cv{height:8px;flex:none}.tc-b{padding:12px 14px 14px;display:grid;gap:10px}
+.tc-t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;min-height:44px}.tc-t h3{margin:0;font-size:1rem;line-height:1.25}
+.tc-r{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;color:#44546f;align-items:center}.tc-r b{color:#172b4d}
+.tc-dots{display:flex;gap:4px;height:5px}.tc-dots i{flex:1;border-radius:3px;background:#dcdfe4}.tc-dots i.d{background:#1f845a}.tc-dots i.a{background:#2f5bd6}
+.tc-ch{display:grid;grid-template-columns:1fr 1fr;gap:6px}.tc-ch span{background:#f1f2f4;border-radius:6px;padding:5px 8px;font-size:.76rem;color:#44546f;display:flex;flex-direction:column;gap:1px}.tc-ch span b{color:#172b4d;font-size:.82rem}
+.tb-vazio{border:2px dashed #b3b9c4;border-radius:10px;padding:22px 14px;text-align:center;color:#6b778c;font-size:.82rem}
+.ob-board .ob-kpi{background:rgba(255,255,255,.96);border:0}
+.ob-board .kb{align-items:stretch;grid-template-columns:repeat(3,minmax(0,1fr))}
+.ob-board .kb-col{background:#ebecf0;display:flex;flex-direction:column;gap:0}.ob-board .kb-card{border:0;box-shadow:0 1px 1px rgba(9,30,66,.25);border-left:4px solid #1f845a}
+.ob-board .kb-col:nth-child(1) .kb-card{border-left-color:#8590a2}.ob-board .kb-col:nth-child(2) .kb-card{border-left-color:#2f5bd6}
+.ob-board .kb-h{color:#172b4d}.ob-board .ob-sub{margin-bottom:14px}
+.ob-board>.sub{margin:0 0 12px}
+@media(max-width:640px){.ob-board .ob-kpis{grid-template-columns:1fr 1fr;gap:8px}.ob-board .ob-kpi{padding:10px 12px}.ob-board .ob-kpi b{font-size:1.05rem}.ob-board .ob-kpi small{font-size:.7rem}.ob-bh h2{font-size:1.15rem}.ob-board .ob-back h2{font-size:1.15rem;flex-basis:100%}.tc-t h3{font-size:.95rem}.ob-board{padding:12px;border-radius:var(--r-md)}.tb{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:86%;overflow-x:auto;scroll-snap-type:x mandatory}.tb-col{scroll-snap-align:start}.ob-board .kb{grid-template-columns:repeat(3,86%)}}
+
+@media(max-width:640px){.kb{grid-template-columns:repeat(3,85%);scroll-snap-type:x mandatory}.kb-col{scroll-snap-align:start}}
+
 /* ===== layout com menu lateral (telas largas) ===== */
 @media (min-width:1000px){
   :root{--side:252px}
@@ -498,6 +600,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
     <div class="brand" aria-label="PHAENG engenharia"><b>PHAENG</b><span>engenharia</span></div>
     <nav class="tabs" id="tabs" aria-label="Seções">
       <button class="tab" data-tab="visao">Visão geral</button>
+      <button class="tab" data-tab="obras">Obras</button>
       <button class="tab" data-tab="lanc">Lançamentos</button>
       <button class="tab" data-tab="insights">Insights</button>
       <button class="tab" data-tab="entregas">Entregas</button>
@@ -566,11 +669,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
         <div class="panel-head"><div><h2 id="obraTitle"></h2><p class="sub" id="obraSub"></p></div></div>
         <div class="stats" id="obraStats"></div>
         <div class="obra-split"><div><h3 class="h3">Saídas da obra por tipo</h3><div class="hlist" id="obraCosts"></div></div><p class="obra-note" id="obraNote"></p></div>
-      </section>
-      <section class="panel rise" id="carteira" hidden style="--i:4">
-        <div class="panel-head"><div><h2>Carteira de obras</h2><p class="sub">Toque em uma obra para ver só as entradas e saídas dela</p></div></div>
-        <div class="sit-seg" id="sitSeg" role="group" aria-label="Situação da obra"></div>
-        <div class="cart" id="carteiraList"></div>
+        <div class="mdo" id="obraMdo" hidden></div>
       </section>
       <div class="grid main-grid">
         <div class="panel rise" style="--i:5">
@@ -603,6 +702,11 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
 
   <p class="feed-note" id="feedNote" hidden></p>
   <!-- LANÇAMENTOS -->
+  <section class="view" id="v-obras" aria-label="Obras">
+    <div id="obHub"></div>
+    <div id="obDet" hidden></div>
+  </section>
+
   <section class="view" id="v-lanc" aria-label="Lançamentos">
     <div class="toolbar">
       <input class="field search" id="qLanc" type="search" placeholder="Buscar por descrição, cliente ou categoria" aria-label="Buscar lançamentos">
@@ -710,6 +814,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
 
 <nav class="bnav" id="bnav" aria-label="Seções">
   <button data-tab="visao"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>Visão</button>
+  <button data-tab="obras"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6"/></svg><span>Obras</span></button>
   <button data-tab="lanc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>Lançamentos</button>
   <button data-tab="entregas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><rect x="4" y="3" width="16" height="18" rx="2"/></svg>Entregas</button>
   <button data-tab="insights"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg>Insights</button>
@@ -721,7 +826,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
 <script>
 /* ícones no menu lateral */
 (function(){
-  const ic={visao:'<rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>',
+  const ic={obras:'<path d="M3 20h18M5 20V9l7-5 7 5v11M9 20v-6h6v6"/>',visao:'<rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/>',
   agenda:'<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/>'};
   document.querySelectorAll('#bnav button[data-tab]').forEach(b=>{const s=b.querySelector('svg');if(s)ic[b.dataset.tab]=s.innerHTML});
   document.querySelectorAll('#tabs .tab').forEach(t=>{const p=ic[t.dataset.tab]||ic.visao;t.insertAdjacentHTML('afterbegin','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>')});
@@ -988,7 +1093,10 @@ db.config=db.config||{saldoInicial:{PHAENG:0,HABITTA:0}};db.config.metas=db.conf
 const live=()=>!db.demo;
 /* obras anteriores ao ano mínimo ficam fora das contas (controle menos rigoroso) */
 const anoMin=()=>{const v=db.config&&db.config.anoMin;return (v===undefined||v===null||v==='')?2026:(Number(v)||0)};
-const foraSet=()=>{const s=new Set();if(!live())return s;const m=anoMin();FEED.obras.concat(db.obras).forEach(o=>{if(o.ano&&Number(o.ano)<m)s.add(o.nome)});return s};
+/* marco zero de 14/11/2026: so Gabriela, Polyanna e as concluidas daqui para frente; obras antigas ficam ocultas (nao apagadas) */
+const MZ_OBSOLETAS=new Set(["Sergio Moreira", "Victor Headão", "João Caetano Magalhães", "Marilia - Rio Tocantins", "Felipe Piv", "Kuzma", "Morretes", "Larissa Araujo", "Edison Martelli - Pinah", "Clientes Gui", "Kuzma - Colina", "Gustavo Martins", "Rogério - RC Odontologia", "Quinta da Figueira", "Nath", "Tatiane", "Isis Piovesan", "Eduardo e Alessandra", "Daniela Setubal", "Marcia Glomb", "Guilherme Golin - Marcallo Tissot 393", "Bruno Stahlke", "Estudio OKAH", "Arq Tiago", "DB Engenharia - Abranches R. Carlos Alberto Ferreira Braga 78", "Eduard e Duda - Pres. Taunay 1106", "Carlos Eduardo - Babilonia"]);
+const OCULTA=o=>/^(obsoleta|orcamento)$/.test((o&&o.situacao)||'')||(!!o&&typeof o.id==='string'&&o.id.startsWith('a:')&&MZ_OBSOLETAS.has(o.nome));
+const foraSet=()=>{const s=new Set();if(!live())return s;const m=anoMin();FEED.obras.concat(db.obras).forEach(o=>{if((o.ano&&Number(o.ano)<m)||OCULTA(o))s.add(o.nome)});return s};
 const semFora=a=>{const f=foraSet();return f.size?a.filter(x=>!x.obra||!f.has(x.obra)):a};
 const L=()=>live()?semFora(db.lanc.concat(FEED.lanc)):db.lanc;
 const PS=()=>live()?db.pessoal.concat(FEED.pessoal):db.pessoal;
@@ -1244,7 +1352,33 @@ function obraStats(nm){
 }
 function pickObra(nm){S.obra=nm;if(nm&&nm!=='__empresa')S.span='total';S.sel=null;render()}
 
+/* ---------- mao de obra da obra (vem da aba 'Mao de obra' do diario) ---------- */
+function renderMdo(o,boxArg){
+  const box=boxArg||$('#obraMdo'),m=o&&o.maoDeObra;
+  if(!m){box.hidden=true;box.innerHTML='';return}
+  const n=v=>typeof v==='number'&&isFinite(v)?v:0,acer=n(m.acertado),pago=n(m.pago),falta=acer-pago,orc=n(m.contratado);
+  const pr=(Array.isArray(m.prestadores)?m.prestadores:[]).filter(p=>n(p.acertado)||n(p.pago)||n(p.contratado))
+    .sort((a,b)=>(n(b.acertado)-n(b.pago))-(n(a.acertado)-n(a.pago)));
+  const dt=d=>{const x=/^(\d{4})-(\d{2})-(\d{2})/.exec(d||'');return x?x[3]+'/'+x[2]+'/'+x[1]:''};
+  let h='<h3 class="h3">Mão de obra</h3><p class="sub">Quanto foi acertado com os prestadores, quanto já foi pago e quanto falta.</p>';
+  if(!acer&&!pago){
+    h+=`<div class="mdo-empty">Ainda não há valores acertados nem pagamentos lançados para esta obra.${orc?` O orçamento prevê ${fmt(orc)} de mão de obra.`:''} Preencha o <b>Valor acertado</b> de cada tarefa e os pagamentos no diário de obra; a aba "Mão de obra" do diário calcula o resto.</div>`;
+  }else{
+    const p=acer?Math.max(0,Math.min(1,pago/acer)):0,over=pago>acer;
+    h+=`<div class="stats"><div class="stat"><span>Acertado com prestadores</span><b class="num sens">${fmt(acer)}</b></div><div class="stat"><span>Já pago</span><b class="num sens">${fmt(pago)}</b></div><div class="stat"><span>${over?'Pago a mais':'Falta pagar'}</span><b class="num sens" style="color:${over?'var(--rust)':falta>0?'var(--ink)':'var(--green)'}">${fmt(Math.abs(falta))}</b></div></div>`;
+    h+=`<div class="mdo-bar${over?' over':''}" role="img" aria-label="${pct(p)} do acertado já foi pago"><i style="width:${p*100}%"></i></div><div class="mdo-cap"><span>${pct(p)} do acertado já foi pago</span>${orc?`<span>Orçado para mão de obra: <b class="num sens">${fmt(orc)}</b></span>`:''}</div>`;
+    h+=`<div class="mdo-rows"><div class="mdo-row head"><span>Prestador</span><span>Pago do acertado</span><span style="text-align:right">Acertado / pago</span><span style="text-align:right">Falta pagar</span></div>`;
+    for(const q of pr){
+      const a=n(q.acertado),g=n(q.pago),f=a-g,pp=a?Math.max(0,Math.min(1,g/a)):0,ov=g>a;
+      h+=`<div class="mdo-row"><span class="pn">${esc(q.nome||'Sem nome')}${q.ultimoPagamento?`<small>Último pagamento em ${dt(q.ultimoPagamento)}</small>`:''}</span><span><span class="mdo-bar${ov?' over':''}" style="display:block;margin:0"><i style="width:${pp*100}%"></i></span></span><span class="pv num sens">${fmt(g)}<small>de ${fmt(a)}</small></span><span class="pv falta num sens ${ov?'over':f<=0?'ok':''}">${ov?'+':''}${fmt(Math.abs(f))}<small>${ov?'pago a mais':f<=0?'quitado':'a pagar'}</small></span></div>`;
+    }
+    h+='</div>';
+  }
+  box.innerHTML=h;box.hidden=false;
+}
+
 function renderObraPanels(){
+  $('#obraPanel').hidden=true;return;
   const ob=S.obra&&S.obra!=='__empresa'?S.obra:null;
   $('#obraPanel').hidden=!ob;$('#carteira').hidden=!!S.obra||!OBRAS().length;
   if(ob){
@@ -1255,6 +1389,7 @@ function renderObraPanels(){
     $('#obraStats').innerHTML=cells.map(c=>`<div class="stat"><span>${c[0]}</span><b class="num sens">${c[1]}</b></div>`).join('');
     barList($('#obraCosts'),CAT_OBRA.map(c=>({k:c,v:s.by[c]||0,color:c.startsWith('Retrabalho')?'var(--rust)':'var(--sage-d)'})),{color:'var(--sage-d)'});
     const rt=s.by['Retrabalho e não previstos']||0;
+    renderMdo(s.o);
     $('#obraNote').textContent=s.custo?`Custos pagos: ${fmt(s.custo)}, ${pct(s.rec?s.custo/s.rec:0)} do que o proprietário depositou. Retrabalho e não previstos somam ${fmt(rt)} (${pct(rt/s.custo)} dos custos).`:'Nenhum custo registrado nesta obra ainda. Deposite as notas em 06 Financeiro, subpasta Saídas.';
   }
   const cr=$('#carteiraList');
@@ -1971,11 +2106,137 @@ function openCfg(){
 function startEmpty(){db=emptyDb();save();S.endYm=defaultEnd();S.sel=null;introAll();render();toast('Painel zerado. Pode começar a lançar.')}
 function introAll(){introPending.visao=introPending.insights=introPending.pessoal=true}
 
+
+/* ---------- aba Obras: cards e painel da obra ---------- */
+const OB={sel:'',sub:'quadro',filt:'andamento'};
+const nnum=v=>typeof v==='number'&&isFinite(v)?v:0;
+const dayMs=s=>s?Date.parse(s+'T12:00:00'):NaN;
+const emAndamento=o=>!(encerrada(o)||o.situacao==='executada');
+function obInfo(o){
+  const s=obraStats(o.nome),E=Array.isArray(o.etapas)?o.etapas:[],cv=Array.isArray(o.curva)?o.curva:[],hj=new Date().toISOString().slice(0,10);
+  /* data de referência = última semana com avanço lançado no diário (a mais recente disponível) */
+  let ri=-1;cv.forEach((c,k)=>{if(c.realizado>(cv[k-1]?cv[k-1].realizado:0)+1e-9)ri=k});
+  if(ri<0)ri=Math.max(0,cv.filter(c=>c.data<=hj).length-1);
+  const pc=cv[ri],ref=pc?pc.data:null;
+  let av=pc&&E.length?pc.realizado:null;
+  if(av===null){const l=lastAvanco(o.nome);av=l===null?null:l/100}
+  const temPrev=cv.some(c=>c.previsto>0),prev=temPrev&&pc?pc.previsto:null;
+  const des=prev===null||av===null?null:(av-prev)*100,m=o.maoDeObra||null;
+  return{s,E,cv,av,prev,des,temPrev,ref,falta:m?nnum(m.acertado)-nnum(m.pago):null,rec:s.contrato?Math.min(1,s.rec/s.contrato):0};
+}
+function statusBadge(o,i){
+  if(!emAndamento(o))return '<span class="badge ok">Concluída</span>';
+  if(i.des===null)return '<span class="badge">Em andamento</span>';
+  return i.des<-5?'<span class="badge bad">Atrasada</span>':i.des<-1?'<span class="badge bad">Levemente atrasada</span>':'<span class="badge ok">No prazo</span>';
+}
+function donut(p,sz=150){
+  const r=sz/2-12,c=2*Math.PI*r,v=Math.max(0,Math.min(1,p||0));
+  return `<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}" role="img" aria-label="Avanço ${Math.round(v*100)}%"><circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="#e6e6e1" stroke-width="12"/><circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="var(--blue)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(c*v).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 ${sz/2} ${sz/2})"/><text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="${sz/5}" font-weight="700" fill="currentColor">${Math.round(v*100)}%</text></svg>`;
+}
+function renderObras(){
+  const lista=OBRAS().filter(o=>o.situacao!=='orcamento');
+  if(OB.sel&&!lista.some(o=>o.nome===OB.sel))OB.sel='';
+  $('#obHub').hidden=!!OB.sel;$('#obDet').hidden=!OB.sel;
+  if(OB.sel)renderObraDet(lista.find(o=>o.nome===OB.sel));else renderObraHub(lista);
+}
+function renderObraHub(lista){
+  const a=lista.filter(emAndamento),c=lista.filter(o=>!emAndamento(o));
+  let ref='';lista.forEach(o=>{const i=obInfo(o);if(i.ref&&i.ref>ref)ref=i.ref});
+  const card=o=>{const i=obInfo(o),av=i.av,E=i.E,cor=!emAndamento(o)?'#1f845a':i.des!==null&&i.des<-1?'#c9372c':'#2f5bd6',
+    dots=E.length?E.map(e=>`<i class="${e.pct>=.999?'d':e.pct>0?'a':''}"></i>`).join(''):'<i></i>',
+    ep=E.length?E.filter(e=>e.pct>=.999).length+'/'+E.length+' etapas':'sem etapas',
+    atual=E.find(e=>e.pct>0&&e.pct<.999);
+    return `<button class="tc" data-open="${esc(o.nome)}"><div class="tc-cv" style="background:${cor}"></div><div class="tc-b">
+      <div class="tc-t"><h3>${esc(o.nome)}</h3>${statusBadge(o,i)}</div>
+      <div><div class="tc-r"><span>Avanço físico${i.ref?' · '+i.ref.slice(8)+'/'+i.ref.slice(5,7):''}</span><b>${av===null?'sem diário':pct(av)}</b></div><div class="pbar" style="margin-top:6px"><i style="width:${(av||0)*100}%"></i>${i.prev!==null?`<b style="left:${Math.min(100,i.prev*100)}%" title="Previsto até hoje"></b>`:''}</div></div>
+      <div class="tc-dots">${dots}</div>
+      <div class="tc-r"><span>${ep}</span><span>${atual?esc(atual.nome)+' '+Math.round(atual.pct*100)+'%':'&nbsp;'}</span></div>
+      <div class="tc-ch"><span>Contrato<b class="sens">${i.s.contrato?fmt(i.s.contrato):'a informar'}</b></span><span>Recebido<b class="sens">${i.s.contrato?pct(i.rec):fmt(i.s.rec)}</b></span></div>
+      <div class="tc-r"><span>Mão de obra a pagar</span><b class="sens">${i.falta===null?'–':fmt(Math.max(0,i.falta))}</b></div></div></button>`};
+  const col=(t,arr,vz)=>`<div class="tb-col"><div class="tb-h">${t}<span>${arr.length}</span></div>${arr.map(card).join('')||`<div class="tb-vazio">${vz}</div>`}</div>`;
+  $('#obHub').innerHTML=`<div class="ob-board"><div class="ob-bh"><h2>Obras</h2>${ref?`<span class="pl">Dados até ${ref.slice(8)}/${ref.slice(5,7)}/${ref.slice(0,4)}</span>`:''}<span class="pl">layout Trello · 14/11 22h</span><span class="pl">${a.length} em andamento · ${c.length} concluída${c.length==1?'':'s'}</span></div><div class="tb">${col('Em andamento',a,'Nenhuma obra em andamento.')}${col('Concluídas (a partir de hoje)',c,'As próximas obras entregues aparecem aqui, com todos os dados guardados.')}</div></div>`;
+}
+function ganttHTML(E){
+  const W=6*864e5,hoje=Date.now();
+  const it=E.map(e=>({e,pa:dayMs(e.inicio),pb:dayMs(e.fim),ra:dayMs(e.inicioReal),rb:dayMs(e.fimReal)}));
+  const all=it.flatMap(x=>[x.pa,x.pb+W,x.ra,x.rb+W]).filter(isFinite).concat([hoje+10*864e5]);
+  if(all.length<2)return '';
+  const t0=Math.min(...all),t1=Math.max(...all),sp=t1-t0||1,L=t=>((t-t0)/sp*100).toFixed(2);
+  let ms='',ml='',d=new Date(t0);d.setDate(1);d.setMonth(d.getMonth()+1);
+  for(;d.getTime()<t1;d.setMonth(d.getMonth()+1)){const lf=L(d.getTime());ms+=`<span class="g-m" style="left:${lf}%"></span>`;ml+=`<span class="g-m" style="left:${lf}%">${d.toLocaleDateString('pt-BR',{month:'short'}).replace('.','')}</span>`}
+  let rows=`<div class="g-row g-h"><div class="g-n">Etapa</div><div class="g-t">${ml}</div></div>`;
+  for(const x of it){
+    const p=Math.max(0,Math.min(1,nnum(x.e.pct)));let bars='',lab='';
+    if(isFinite(x.pa))bars+=`<span class="g-bar plan" style="left:${L(x.pa)}%;width:${Math.max(.8,(x.pb+W-x.pa)/sp*100)}%" title="Previsto"></span>`;
+    if(isFinite(x.ra)){const w=Math.max(.8,(x.rb+W-x.ra)/sp*100);bars+=`<span class="g-bar real${p>=.999?' ok':''}" style="left:${L(x.ra)}%;width:${w}%"><i style="width:${p*100}%"></i></span>`;lab=`<span class="g-pct" style="left:calc(${L(x.ra)}% + ${w}% + 6px)">${Math.round(p*100)}%</span>`}
+    else if(!isFinite(x.pa))lab='<span class="g-pct" style="left:6px;color:#8a8a85">sem lançamento</span>';
+    else lab=`<span class="g-pct" style="left:calc(${L(x.pa)}% + ${Math.max(.8,(x.pb+W-x.pa)/sp*100)}% + 6px);color:#8a8a85">0%</span>`;
+    rows+=`<div class="g-row"><div class="g-n" title="${esc(x.e.nome)}">${esc(x.e.nome)}</div><div class="g-t">${ms}${bars}${lab}</div></div>`;
+  }
+  return `<div class="gantt"><div class="g-in" style="position:relative">${rows}<div class="g-hoje" style="left:calc(var(--gn,190px) + (100% - var(--gn,190px)) * ${L(hoje)/100})"><b>Hoje</b></div></div></div><div class="ob-leg"><span><i style="background:#b9b9b2"></i>Previsto</span><span><i style="background:var(--blue);height:6px"></i>Realizado</span><span><i style="background:var(--green);height:6px"></i>Concluída</span><span><i style="background:var(--rust)"></i>Hoje</span></div>`;
+}
+function curvaHTML(cv0,temPrev,refD){
+  let cv=cv0.slice();const hj=new Date().toISOString().slice(0,10);let li=0;
+  cv.forEach((c,i)=>{const q=cv[i-1]||{previsto:0,realizado:0};if(c.previsto!==q.previsto||c.realizado!==q.realizado)li=i});
+  cv=cv.slice(0,Math.min(cv.length,Math.max(li,cv.filter(c=>c.data<=hj).length)+2));
+  if(cv.length<2)return '';
+  const mob=window.innerWidth<640,w=mob?440:720,ht=mob?230:240,pl=40,pr=12,pt=12,pb=28,t0=dayMs(cv[0].data),t1=dayMs(cv[cv.length-1].data),hoje=Date.now();
+  const X=t=>pl+(t-t0)/(t1-t0||1)*(w-pl-pr),Y=v=>pt+(1-Math.min(1,v))*(ht-pt-pb),line=(arr,k)=>arr.map((c,i)=>(i?'L':'M')+X(dayMs(c.data)).toFixed(1)+' '+Y(c[k]).toFixed(1)).join(' ');
+  let g='';for(const v of [0,.25,.5,.75,1])g+=`<line x1="${pl}" x2="${w-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="currentColor" stroke-opacity=".12"/><text x="${pl-6}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="currentColor" opacity=".6">${v*100}%</text>`;
+  const xs=[cv[0],cv[Math.floor(cv.length/2)],cv[cv.length-1]].map((c,i)=>`<text x="${X(dayMs(c.data))}" y="${ht-8}" text-anchor="${i==0?'start':i==2?'end':'middle'}" font-size="11" fill="currentColor" opacity=".6">${c.data.slice(8)}/${c.data.slice(5,7)}/${c.data.slice(2,4)}</text>`).join('');
+  const hx=hoje>=t0&&hoje<=t1?`<line x1="${X(hoje)}" x2="${X(hoje)}" y1="${pt}" y2="${ht-pb}" stroke="var(--rust)" stroke-width="1.5"/>`:'';
+  return `<svg class="curvaS" viewBox="0 0 ${w} ${ht}" role="img" aria-label="Curva S">${g}${xs}${hx}${temPrev?`<path d="${line(cv,'previsto')}" fill="none" stroke="#8a8a85" stroke-width="2" stroke-dasharray="5 4"/>`:''}<path d="${line(cv.filter(c=>c.data<=(refD||hj)),'realizado')}" fill="none" stroke="var(--blue)" stroke-width="2.5"/></svg><div class="ob-leg"><span><i style="background:var(--blue)"></i>Realizado</span>${temPrev?'<span><i style="background:#8a8a85"></i>Previsto</span>':'<span style="color:#8a8a85">Sem cronograma previsto preenchido no diário.</span>'}<span><i style="background:var(--rust)"></i>Hoje</span></div>`;
+}
+function renderObraDet(o){
+  const i=obInfo(o),s=i.s,E=i.E,sub=OB.sub,n=nnum;
+  const subs=[['quadro','Quadro'],['resumo','Resumo'],['crono','Cronograma'],['fin','Financeiro'],['equipe','Equipe']];
+  let h=`<div class="ob-back"><button class="chip-btn" id="obBack">← Obras</button><h2>${esc(o.nome)}</h2>${statusBadge(o,i)}${i.ref?`<span class="sub" style="margin:0">Dados de ${i.ref.slice(8)}/${i.ref.slice(5,7)}/${i.ref.slice(0,4)}</span>`:''}</div><div class="ob-sub">${subs.map(x=>`<button class="chip-btn" data-sub="${x[0]}" aria-pressed="${sub===x[0]}">${x[1]}</button>`).join('')}</div>`;
+  const fmtD=v=>v===null?'–':(v>0?'+':'')+v.toFixed(1).replace('.',',')+' pontos';
+  const kpis=`<div class="ob-kpis">
+    <div class="ob-kpi"><span>Avanço físico</span><b>${i.av===null?'–':pct(i.av)}</b><small>${E.length?E.filter(e=>e.pct>=.999).length+' de '+E.length+' etapas concluídas':'sem diário de obra'}</small></div>
+    <div class="ob-kpi"><span>Previsto na mesma data</span><b>${i.prev===null?'–':pct(i.prev)}</b><small class="${i.des!==null&&i.des<-1?'bad':'good'}">${i.des===null?'sem cronograma previsto':'desvio '+fmtD(i.des)}</small></div>
+    <div class="ob-kpi"><span>Contrato</span><b class="sens">${s.contrato?fmt(s.contrato):'não informado'}</b><small class="sens">recebido ${fmt(s.rec)}</small></div>
+    <div class="ob-kpi"><span>Falta receber</span><b class="sens">${s.contrato?fmt(s.falta):'–'}</b><small class="sens">resultado ${sgn(s.res)}</small></div></div>`;
+  if(sub==='quadro'){
+    const fd=v=>v?v.slice(8)+'/'+v.slice(5,7):'';
+    const col=(t,cor,arr)=>`<div class="kb-col"><div class="kb-h"><i style="background:${cor}"></i>${t}<span>${arr.length}</span></div>${arr.map(e=>{const p=Math.max(0,Math.min(1,n(e.pct))),ov=n(e.moAcertada)>n(e.moOrcada)&&n(e.moOrcada)>0,ini=e.inicioReal||e.inicio,fim=e.fimReal||e.fim;
+      return `<div class="kb-card${p>=.999?' done':''}"><b>${esc(e.nome)}</b><div class="pbar"><i style="width:${p*100}%;${p>=.999?'background:var(--green)':''}"></i></div><div class="kb-meta"><span>${Math.round(p*100)}%</span>${ini?`<span>${fd(ini)}${fim&&fim!==ini?' → '+fd(fim):''}</span>`:''}</div><div class="kb-meta"><span class="sens">Cliente ${fmt(n(e.valorCliente))}</span>${n(e.moAcertada)||n(e.moOrcada)?`<span class="sens ${ov?'over':''}">MO ${fmt(n(e.moAcertada))}${n(e.moOrcada)?' / '+fmt(n(e.moOrcada)):''}</span>`:''}</div></div>`}).join('')||'<div class="kb-vazio">–</div>'}</div>`;
+    const A=E.filter(e=>n(e.pct)<=0),B=E.filter(e=>n(e.pct)>0&&n(e.pct)<.999),C=E.filter(e=>n(e.pct)>=.999);
+    h+=kpis;
+    h+=E.length?`<p class="sub">Cada cartão é uma etapa do diário de obra e muda de coluna sozinho conforme o avanço lançado.</p><div class="kb">${col('A fazer','#b9b9b2',A)}${col('Em andamento','var(--blue)',B)}${col('Concluídas','var(--green)',C)}</div>`:'<div class="ob-empty">Esta obra ainda não tem diário de obra (Acompanhamento) com etapas. Quando o diário estiver na pasta 05 Diário de Obra, o quadro aparece aqui. Os dados financeiros já estão na aba Financeiro.</div>';
+  }else if(sub==='resumo'){
+    h+=kpis;
+    h+=`<div class="panel ob-sec"><div class="ob-split"><div style="text-align:center">${donut(i.av||0)}<div style="font-size:.8rem;color:#6b6b6b;margin-top:4px">Progresso geral</div></div><div>${i.cv.length>1?curvaHTML(i.cv,i.temPrev,i.ref):'<div class="ob-empty">A curva S aparece quando o diário da obra tiver avanço lançado.</div>'}</div></div></div>`;
+    const em=E.filter(e=>e.pct>0&&e.pct<.999);
+    h+=`<div class="panel ob-sec"><h3 class="h3">Etapas em andamento</h3>${em.length?em.map(e=>`<div class="ob-cost"><span>${esc(e.nome)}</span><div class="pbar"><i style="width:${e.pct*100}%"></i></div><b>${Math.round(e.pct*100)}%</b></div>`).join(''):'<p class="sub">Nenhuma etapa parcial agora.</p>'}</div>`;
+  }else if(sub==='crono'){
+    h+=`<div class="panel ob-sec"><h3 class="h3">Cronograma</h3><p class="sub">Barra fina cinza é o previsto; a barra grossa é o realizado, preenchida até o quanto da etapa já foi feito.</p>${E.length?ganttHTML(E):'<div class="ob-empty">Esta obra ainda não tem diário de obra com etapas.</div>'}</div>`;
+    if(i.cv.length>1)h+=`<div class="panel ob-sec"><h3 class="h3">Curva S: previsto × realizado</h3>${curvaHTML(i.cv,i.temPrev,i.ref)}</div>`;
+  }else if(sub==='fin'){
+    const moO=E.reduce((a,e)=>a+n(e.moOrcada),0),moA=E.reduce((a,e)=>a+n(e.moAcertada),0);
+    h+=`<div class="ob-kpis"><div class="ob-kpi"><span>Contrato</span><b class="sens">${s.contrato?fmt(s.contrato):'não informado'}</b></div><div class="ob-kpi"><span>Recebido do proprietário</span><b class="sens">${fmt(s.rec)}</b><small class="sens">${s.contrato?pct(i.rec)+' do contrato':''}</small></div><div class="ob-kpi"><span>Custos pagos</span><b class="sens">${fmt(s.custo)}</b><small>${s.rec?pct(s.custo/s.rec)+' do recebido':''}</small></div><div class="ob-kpi"><span>Resultado</span><b class="sens ${s.res<0?'bad':''}">${sgn(s.res)}</b><small>${pct(s.margem)} de margem</small></div></div>`;
+    const mx=Math.max(1,...CAT_OBRA.map(c=>s.by[c]||0));
+    h+=`<div class="panel ob-sec"><h3 class="h3">Saídas por tipo</h3>${CAT_OBRA.map(c=>`<div class="ob-cost"><span>${c}</span><div class="pbar"><i style="width:${(s.by[c]||0)/mx*100}%;${c.startsWith('Retrabalho')?'background:var(--rust)':''}"></i></div><b class="sens">${fmt(s.by[c]||0)}</b></div>`).join('')}</div>`;
+    if(E.length){const rows=E.filter(e=>n(e.peso)||n(e.valorCliente)||n(e.moOrcada)||n(e.moAcertada)).map(e=>{const ov=n(e.moAcertada)>n(e.moOrcada)&&n(e.moOrcada)>0;return `<tr><td>${esc(e.nome)}</td><td>${Math.round(n(e.pct)*100)}%</td><td class="sens">${fmt(n(e.valorCliente))}</td><td class="sens">${n(e.moOrcada)?fmt(n(e.moOrcada)):'–'}</td><td class="sens ${ov?'over':''}">${n(e.moAcertada)?fmt(n(e.moAcertada)):'–'}</td></tr>`}).join('');
+      h+=`<div class="panel ob-sec"><h3 class="h3">Custo por etapa</h3><p class="sub">Mão de obra orçada contra a acertada. Em vermelho quando o acertado passou do orçado (total acertado ${fmt(moA)} de ${fmt(moO)} orçado).</p><div class="ob-wrap"><table class="ob-tb"><thead><tr><th>Etapa</th><th>Concluído</th><th>Valor ao cliente</th><th>MO orçada</th><th>MO acertada</th></tr></thead><tbody>${rows}</tbody></table></div></div>`}
+  }else{
+    h+='<div class="panel ob-sec"><div class="mdo" id="obMdoBox" hidden></div></div>';
+  }
+  $('#obDet').innerHTML='<div class="ob-board">'+h+'</div>';
+  if(sub==='equipe'){const b=$('#obMdoBox');renderMdo(o,b);if(b.hidden){b.hidden=false;b.innerHTML='<div class="ob-empty">Esta obra ainda não tem a aba Mão de obra no diário.</div>'}}
+}
+$('#v-obras').addEventListener('click',e=>{
+  const f=e.target.closest('[data-filt]');if(f){OB.filt=f.dataset.filt;renderObras();return}
+  const o=e.target.closest('[data-open]');if(o){OB.sel=o.dataset.open;OB.sub='quadro';renderObras();window.scrollTo({top:0});return}
+  if(e.target.closest('#obBack')){OB.sel='';renderObras();window.scrollTo({top:0});return}
+  const s=e.target.closest('[data-sub]');if(s){OB.sub=s.dataset.sub;renderObras()}
+});
+
 /* ---------- navegação e eventos ---------- */
 function render(){
   $('#demoBar').hidden=!db.demo;
   renderControls();
-  if(S.tab==='visao')renderVisao();else if(S.tab==='lanc')renderLanc();else if(S.tab==='insights')renderInsights();else if(S.tab==='entregas')renderEntregas();else if(S.tab==='agenda')renderAgenda();else if(S.tab==='cobr')renderCobr();else if(S.tab==='contab')renderContab();else renderPessoal();
+  if(S.tab==='obras')renderObras();else if(S.tab==='visao')renderVisao();else if(S.tab==='lanc')renderLanc();else if(S.tab==='insights')renderInsights();else if(S.tab==='entregas')renderEntregas();else if(S.tab==='agenda')renderAgenda();else if(S.tab==='cobr')renderCobr();else if(S.tab==='contab')renderContab();else renderPessoal();
 }
 function go(tab){
   S.tab=tab;$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+tab));
@@ -1986,8 +2247,6 @@ function go(tab){
 $$('[data-tab]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.tab)));
 $('#obraChips').addEventListener('click',e=>{const b=e.target.closest('[data-obra]');if(b)pickObra(b.dataset.obra)});
 $('#attn').addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)go(b.dataset.go)});
-$('#sitSeg').addEventListener('click',e=>{const b=e.target.closest('[data-sit]');if(b){S.situ=b.dataset.sit;render()}});
-$('#carteiraList').addEventListener('click',e=>{const b=e.target.closest('[data-obra]');if(b)pickObra(b.dataset.obra)});
 $('#segSpan').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.span=b.dataset.v==='total'?'total':+b.dataset.v;S.sel=null;render()});
 $('#btnResumo').onclick=openResumo;$('#btnPrint').onclick=()=>window.print();$('#btnResumoX').onclick=()=>$('#dlgResumo').close();
 $('#btnMetas').onclick=openMetas;$('#btnImp').onclick=openImport;
@@ -2012,7 +2271,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('.mini');if(!b)re
 $('#btnHide').setAttribute('aria-pressed',document.body.classList.contains('hide'));
 setSeg($('#segTipo'),'all');
 $('#btnPrintCt').addEventListener('click',()=>{document.body.classList.add('pc');setTimeout(()=>{window.print();document.body.classList.remove('pc')},50)});
-const h=location.hash.slice(1);go(['visao','lanc','insights','entregas','agenda','cobr','contab','pessoal'].includes(h)?h:'visao');
+const h=location.hash.slice(1);go(['visao','obras','lanc','insights','entregas','agenda','cobr','contab','pessoal'].includes(h)?h:'visao');
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{chFlow&&chFlow.redraw();chNet&&chNet.redraw();chPes&&chPes.redraw()});
 window.__phaeng={S,get db(){return db},render,go};
 })();
