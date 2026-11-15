@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#fafaf8">
+<title>PHAENG · Acompanhamento da obra</title>
+<style>
+:root{--ink:#1d2a22;--muted:#6b7068;--line:#e7e6df;--bg:#fafaf8;--card:#fff;--blue:#2740e8;--green:#1f845a;--rust:#c9372c;--amber:#8a6200;--r:18px}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+.wrap{max-width:760px;margin:0 auto;padding:18px 16px 48px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.logo{font-weight:800;font-size:22px;letter-spacing:-.5px}.logo small{display:block;font-weight:500;font-size:10px;letter-spacing:.3em;color:var(--muted);margin-top:-2px}
+button{font:inherit;cursor:pointer}
+.lnk{background:none;border:0;color:var(--muted);text-decoration:underline;padding:6px}
+.btn{background:var(--ink);color:#fff;border:0;border-radius:999px;padding:12px 22px;font-weight:600;width:100%}
+.btn:disabled{opacity:.55}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
+h1{font-size:22px;margin:4px 0 2px;letter-spacing:-.3px}h2{font-size:16px;margin:0 0 12px}
+.sub{color:var(--muted);font-size:13px;margin:0}
+.bar{height:12px;border-radius:99px;background:#eceae3;overflow:hidden;margin:10px 0 6px}.bar>i{display:block;height:100%;background:var(--blue);border-radius:99px}
+.row{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.big{font-size:34px;font-weight:700;letter-spacing:-1px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.k{background:#f5f4ee;border-radius:14px;padding:12px}.k small{display:block;color:var(--muted);font-size:12px}.k b{font-size:16px}
+.et{padding:12px 0;border-top:1px solid var(--line)}.et:first-of-type{border-top:0}
+.pill{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.p-ok{background:#e5f3ec;color:var(--green)}.p-and{background:#e8ecff;color:var(--blue)}.p-no{background:#eeede7;color:var(--muted)}.p-atr{background:#fbeae6;color:var(--rust)}.p-y{background:#fbf2d6;color:var(--amber)}
+.mini{height:6px;border-radius:99px;background:#eceae3;margin-top:8px;overflow:hidden}.mini>i{display:block;height:100%;background:var(--green)}
+.pg{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.pg:first-of-type{border-top:0}
+.rel{padding:12px 0;border-top:1px solid var(--line)}.rel:first-of-type{border-top:0}.rel p{margin:4px 0 0}
+label{display:block;font-size:13px;color:var(--muted);margin:12px 0 4px}
+input{width:100%;font:inherit;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+input:focus{outline:2px solid var(--blue);outline-offset:1px}
+.err{color:var(--rust);font-size:13px;min-height:18px;margin:10px 0 0}.ok{color:var(--green);font-size:13px}
+.hide{display:none!important}
+svg{display:block;width:100%;height:130px}
+.leg{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}.leg i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.foot{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="logo">PHAENG<small>engenharia</small></div><button class="lnk hide" id="sair">Sair</button></div>
+
+  <div id="vLogin" class="card hide">
+    <h1 id="lgT">Acompanhe a sua obra</h1>
+    <p class="sub" id="lgS">Entre com o e-mail e a senha que você criou.</p>
+    <label for="em">E-mail</label><input id="em" type="email" autocomplete="username" inputmode="email">
+    <label for="sn">Senha</label><input id="sn" type="password" autocomplete="current-password">
+    <div id="sn2w" class="hide"><label for="sn2">Repita a senha</label><input id="sn2" type="password" autocomplete="new-password"></div>
+    <p class="err" id="err"></p>
+    <button class="btn" id="go">Entrar</button>
+    <p style="text-align:center;margin:10px 0 0"><button class="lnk" id="esq">Esqueci a senha</button></p>
+  </div>
+
+  <div id="vCarrega" class="card hide"><p class="sub">Carregando…</p></div>
+  <div id="vObra" class="hide"></div>
+  <div class="foot">PHAENG Engenharia · seus dados são visíveis só para você</div>
+</div>
+
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,signOut} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {getFirestore,doc,getDoc,writeBatch} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+const app=initializeApp({apiKey:"AIzaSyA1FzNnSuPfNx_QBGWeIxX_JHz-zJYUBWY",authDomain:"phaeng-painel.firebaseapp.com",projectId:"phaeng-painel",storageBucket:"phaeng-painel.firebasestorage.app",messagingSenderId:"1066315951786",appId:"1:1066315951786:web:34b8c5a96c19e01d872ad3"});
+const auth=getAuth(app),fs=getFirestore(app);
+const $=id=>document.getElementById(id);
+const CODE=(new URLSearchParams(location.search).get('c')||'').replace(/[^a-z0-9]/gi,'').slice(0,40);
+let criando=!!CODE,pendente=false;
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
+const brl2=v=>'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const dt=d=>d?String(d).slice(8,10)+'/'+String(d).slice(5,7)+'/'+String(d).slice(0,4):'';
+const dm=d=>d?String(d).slice(8,10)+'/'+String(d).slice(5,7):'';
+const pc=v=>Math.round((v||0)*100)+'%';
+function mostra(v){['vLogin','vCarrega','vObra'].forEach(x=>$(x).classList.toggle('hide',x!==v))}
+function formLogin(){
+  mostra('vLogin');$('sair').classList.add('hide');
+  $('lgT').textContent=criando?'Crie o seu acesso':'Acompanhe a sua obra';
+  $('lgS').textContent=criando?'Você recebeu um convite da PHAENG. Informe seu e-mail e escolha uma senha (mínimo 8 caracteres).':'Entre com o e-mail e a senha que você criou.';
+  $('sn2w').classList.toggle('hide',!criando);$('go').textContent=criando?'Criar acesso':'Entrar';
+  $('sn').autocomplete=criando?'new-password':'current-password';
+  $('esq').classList.toggle('hide',criando);
+  $('err').textContent='';$('go').disabled=false;
+}
+const MSG={'auth/invalid-credential':'E-mail ou senha incorretos.','auth/wrong-password':'E-mail ou senha incorretos.','auth/user-not-found':'E-mail ou senha incorretos.','auth/invalid-email':'E-mail inválido.','auth/weak-password':'Senha muito curta (mínimo 8 caracteres).','auth/email-already-in-use':'Este e-mail já tem cadastro. Entre com a senha, ou use "Esqueci a senha".','auth/too-many-requests':'Muitas tentativas. Aguarde alguns minutos.','auth/network-request-failed':'Sem conexão. Tente de novo.'};
+$('go').onclick=async()=>{
+  const e=$('em').value.trim(),s=$('sn').value;$('err').textContent='';
+  if(!e||!s){$('err').textContent='Preencha e-mail e senha.';return}
+  if(criando){if(s.length<8){$('err').textContent=MSG['auth/weak-password'];return}if(s!==$('sn2').value){$('err').textContent='As senhas não conferem.';return}}
+  $('go').disabled=true;
+  try{
+    if(criando){pendente=true;await createUserWithEmailAndPassword(auth,e,s)}
+    else await signInWithEmailAndPassword(auth,e,s);
+  }catch(x){pendente=false;$('go').disabled=false;$('err').textContent=MSG[x&&x.code]||'Não foi possível entrar. Tente de novo.'}
+};
+$('esq').onclick=async()=>{
+  const e=$('em').value.trim();if(!e){$('err').textContent='Digite seu e-mail acima e toque de novo.';return}
+  try{await sendPasswordResetEmail(auth,e)}catch(_){}
+  $('err').className='ok';$('err').textContent='Se este e-mail tiver cadastro, você receberá um link para criar nova senha.';
+};
+$('sair').onclick=async()=>{await signOut(auth);location.href='/cliente.html'};
+
+async function reivindicar(user){
+  /* vincula este usuário à obra do convite (regras do banco validam o convite: existe, não usado, não vencido) */
+  const cv=await getDoc(doc(fs,'convites',CODE));
+  if(!cv.exists())throw new Error('Convite inválido ou já usado.');
+  const d=cv.data();if(d.usado)throw new Error('Este convite já foi usado.');
+  const b=writeBatch(fs);
+  b.set(doc(fs,'acessos',user.uid),{obra:d.obra,convite:CODE});
+  b.update(doc(fs,'convites',CODE),{usado:true,uid:user.uid});
+  await b.commit();
+}
+onAuthStateChanged(auth,async user=>{
+  if(!user){formLogin();return}
+  mostra('vCarrega');$('sair').classList.remove('hide');
+  try{
+    if(CODE&&pendente){await reivindicar(user);pendente=false;history.replaceState(null,'','/cliente.html')}
+    const a=await getDoc(doc(fs,'acessos',user.uid));
+    if(!a.exists()){erro('Seu acesso ainda não está vinculado a uma obra. Peça um novo convite à PHAENG.');return}
+    const c=await getDoc(doc(fs,'clientes',a.data().obra));
+    if(!c.exists()){erro('Os dados da sua obra ainda estão sendo preparados. Volte em alguns minutos.');return}
+    let j;try{j=JSON.parse(c.data().json)}catch(_){erro('Não foi possível ler os dados agora.');return}
+    render(j,c.data().atualizado);
+  }catch(x){
+    const m=(x&&x.message)||'';
+    erro(/Convite|convite/.test(m)?m:'Não foi possível carregar agora. Tente de novo em instantes.');console.warn(x&&x.code,m);
+  }
+});
+function erro(t){$('vObra').innerHTML='<div class="card"><p>'+esc(t)+'</p></div>';mostra('vObra')}
+
+function curvaSVG(j){
+  const cv=(j.curva||[]).filter(c=>c.realizado!=null);if(cv.length<2)return '';
+  const T=d=>new Date(d+'T12:00:00').getTime(),t0=T(cv[0].data),t1=T(cv[cv.length-1].data)||t0+1,W=300,H=130;
+  const X=c=>4+(T(c.data)-t0)/Math.max(1,t1-t0)*(W-8),Y=v=>H-6-Math.max(0,Math.min(1,v))*(H-14);
+  const P=(a,k)=>a.map((c,i)=>(i?'L':'M')+X(c).toFixed(1)+' '+Y(c[k]).toFixed(1)).join(' ');
+  const prev=j.prevOk?'<path d="'+P(j.curva.filter(c=>c.previsto!=null),'previsto')+'" fill="none" stroke="#9a9a92" stroke-width="1.6" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>':'';
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Evolução do avanço">'+
+    '<line x1="0" y1="'+Y(0)+'" x2="'+W+'" y2="'+Y(0)+'" stroke="#e7e6df"/><line x1="0" y1="'+Y(1)+'" x2="'+W+'" y2="'+Y(1)+'" stroke="#e7e6df" stroke-dasharray="2 3"/>'+prev+
+    '<path d="'+P(cv,'realizado')+'" fill="none" stroke="#2740e8" stroke-width="2.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>'+
+    '<div class="leg"><span><i style="background:#2740e8"></i>Realizado</span>'+(j.prevOk?'<span><i style="background:#9a9a92"></i>Previsto</span>':'')+'</div>';
+}
+function render(j,atual){
+  const o=j.obra||{},f=j.fin||{},av=o.avanco==null?null:Math.max(0,Math.min(100,o.avanco));
+  const et=j.etapas||[],atr=et.filter(e=>e.atrasada);
+  let h='<div class="card"><p class="sub">Sua obra</p><h1>'+esc(o.nome)+'</h1><p class="sub">'+(o.dadosAte?'Posição em '+dt(o.dadosAte):'')+(atual?' · atualizado em '+dt(atual):'')+'</p>';
+  if(av!==null)h+='<div class="row" style="margin-top:14px"><span class="sub">Avanço físico</span><span class="big">'+Math.round(av)+'%</span></div><div class="bar"><i style="width:'+av+'%"></i></div>'+(et.length?'<p class="sub">'+et.filter(e=>e.pct>=.999).length+' de '+et.length+' etapas concluídas</p>':'');
+  else h+='<p class="sub" style="margin-top:12px">O avanço aparece aqui assim que o primeiro relatório for emitido.</p>';
+  h+='</div>';
+  if(atr.length)h+='<div class="card" style="border-color:#f0c9c3"><h2 style="color:var(--rust)">Atenção ao cronograma</h2>'+atr.map(e=>'<div class="et"><b>'+esc(e.nome)+'</b><p class="sub">Previsto até '+dm(e.fim)+' · está em '+pc(e.pct)+'</p></div>').join('')+'</div>';
+  if(f.contrato!=null){
+    const pr=f.contrato>0?Math.min(100,f.recebido/f.contrato*100):0;
+    h+='<div class="card"><h2>Financeiro</h2><div class="grid"><div class="k"><small>Contrato</small><b>'+brl(f.contrato)+'</b></div><div class="k"><small>Já pago</small><b>'+brl(f.recebido)+'</b></div><div class="k"><small>Falta pagar</small><b>'+brl(f.saldo)+'</b></div></div><div class="bar" style="height:8px"><i style="width:'+pr+'%;background:var(--green)"></i></div><p class="sub">'+Math.round(pr)+'% do contrato pago</p>';
+  }else h+='<div class="card"><h2>Financeiro</h2><p class="sub">Os valores do contrato serão exibidos aqui após a formalização.</p>';
+  if((f.pagamentos||[]).length)h+='<div style="margin-top:12px">'+f.pagamentos.map(p=>'<div class="pg"><div><b>'+esc(p.tipo)+'</b><p class="sub" style="margin:0">'+dt(p.data)+'</p></div><div style="text-align:right"><b>'+brl2(p.valor)+'</b><p style="margin:0"><span class="pill '+(p.status==='pago'?'p-ok':'p-y')+'">'+(p.status==='pago'?'Pago':'A pagar')+'</span></p></div></div>').join('')+'</div>';
+  h+='</div>';
+  const c=curvaSVG(j);if(c)h+='<div class="card"><h2>Evolução da obra</h2>'+c+'</div>';
+  if(et.length)h+='<div class="card"><h2>Etapas</h2>'+et.map(e=>{const st=e.pct>=.999?['Concluída','p-ok']:e.atrasada?['Atrasada','p-atr']:e.pct>0?['Em andamento','p-and']:['A iniciar','p-no'];
+    return '<div class="et"><div class="row"><b>'+esc(e.nome)+'</b><span class="pill '+st[1]+'">'+st[0]+'</span></div><p class="sub" style="margin:2px 0 0">'+pc(e.pct)+(e.fim?' · previsto até '+dm(e.fim):'')+(e.fimReal?' · concluída em '+dm(e.fimReal):'')+'</p><div class="mini"><i style="width:'+Math.round(e.pct*100)+'%"></i></div></div>'}).join('')+'</div>';
+  if((j.entregas||[]).length)h+='<div class="card"><h2>Relatórios</h2>'+j.entregas.map(r=>'<div class="rel"><div class="row"><b>'+esc(r.tipo)+'</b><span class="sub">'+dt(r.data)+(r.avanco!=null?' · '+Math.round(r.avanco)+'%':'')+'</span></div>'+(r.resumo?'<p>'+esc(r.resumo)+'</p>':'')+(r.prazo?'<p class="sub"><b>Próximos passos:</b> '+esc(r.prazo)+'</p>':'')+'</div>').join('')+'</div>';
+  $('vObra').innerHTML=h;mostra('vObra');
+}
+</script>
+</body>
+</html>

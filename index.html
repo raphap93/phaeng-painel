@@ -875,6 +875,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
 <dialog id="dlgResumo" class="resumo"><div class="rs-bar"><button class="btn" id="btnPrint">Imprimir ou salvar em PDF</button><button class="btn ghost" id="btnResumoX">Fechar</button></div><article class="sheet" id="resumoBody"></article></dialog>
 <dialog id="dlgAg"><form class="dlg" id="fAg" method="dialog" novalidate></form></dialog>
 <dialog id="dlgCfg"><div class="dlg" id="cfgBody"></div></dialog>
+<dialog id="dlgAcc"><div class="dlg"><h3 class="h3" id="accT">Acesso do cliente</h3><p class="sub" id="accInfo">O cliente vê só esta obra (andamento, etapas, pagamentos e relatórios). Gere um convite e envie o link: ele mesmo cria a senha. O link vale 7 dias e só funciona uma vez.</p><textarea id="accLink" rows="3" readonly placeholder="O link do convite aparece aqui"></textarea><div class="sem-bar"><button class="btn" id="accGen" type="button">Gerar convite</button><button class="btn" id="accCopy" type="button">Copiar link</button><button class="btn ghost" id="accX" type="button">Fechar</button></div></div></dialog>
 <dialog id="dlgSem"><div class="dlg"><h3 class="h3" id="semT">Resumo da semana</h3><p class="sub">Rascunho montado só com dados do painel (anomalias e notas internas ficam de fora). Revise e edite antes de enviar ao cliente.</p><textarea id="semTxt" rows="18" spellcheck="true"></textarea><div class="sem-bar"><button class="btn" id="semCopy" type="button">Copiar texto</button><button class="btn ghost" id="semX" type="button">Fechar</button></div></div></dialog>
 <div class="toast" id="toast" role="status"><span id="toastTxt"></span><button id="toastBtn">Desfazer</button></div>
 <script type="application/json" id="phaeng-feed">{}</script>
@@ -888,7 +889,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   </div>
 </div>
 <button id="phSair" type="button" hidden title="Sair da conta">Sair</button>
-<div id="phVer" aria-hidden="true">v2026-11-15b</div>
+<div id="phVer" aria-hidden="true">v2026-11-15c</div>
 <style>
 #phLogin{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:#f4f1ea;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #phLogin[hidden]{display:none}
@@ -1017,6 +1018,8 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
 .oc-al{display:flex;flex-wrap:wrap;gap:6px;min-height:26px;align-content:flex-start}
 .al{font:600 11.5px var(--text);padding:4px 9px;border-radius:999px;white-space:nowrap}
 .al.r{background:#fbeae6;color:#c9372c}.al.y{background:#fbf2d6;color:#8a6200}.al.n{background:var(--sage-l);color:var(--muted)}.al.ok{background:#e5f3ec;color:#1f845a}
+#accLink{box-sizing:border-box;width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font:13px/1.4 var(--text);background:#fff;color:var(--ink);resize:none}
+#dlgAcc{width:min(560px,92vw);max-width:92vw}#dlgAcc .dlg{min-width:0;box-sizing:border-box}
 #semTxt{box-sizing:border-box;width:100%;min-height:340px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font:14px/1.55 var(--text);resize:vertical;background:#fff;color:var(--ink)}
 .sem-bar{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 #dlgSem{width:min(620px,92vw);max-width:92vw}#dlgSem .dlg{min-width:0;box-sizing:border-box}
@@ -1037,7 +1040,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getAuth,onAuthStateChanged,signInWithPopup,GoogleAuthProvider,signOut} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {getFirestore,doc,getDoc,runTransaction,setDoc} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {getFirestore,doc,getDoc,runTransaction,setDoc,Timestamp,collection,query,where,getDocs} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 const app=initializeApp({apiKey:"AIzaSyA1FzNnSuPfNx_QBGWeIxX_JHz-zJYUBWY",authDomain:"phaeng-painel.firebaseapp.com",projectId:"phaeng-painel",storageBucket:"phaeng-painel.firebasestorage.app",messagingSenderId:"1066315951786",appId:"1:1066315951786:web:34b8c5a96c19e01d872ad3"});
 const auth=getAuth(app),fs=getFirestore(app);
 const DONO='raphap93@gmail.com',CONTAB=['flavi87@gmail.com'];
@@ -1104,6 +1107,46 @@ function feedValido(novo,atual,pesso){
   }
   return null;
 }
+
+/* ===== portal do cliente: resumo filtrado por obra (o cliente NUNCA lê o feed da empresa) ===== */
+const slugObra=o=>String(o.id||o.nome).replace(/[^A-Za-z0-9_-]/g,'-');
+function clienteDoc(feed,o){
+  const n=v=>Number(v)||0,cv=Array.isArray(o.curva)?o.curva:[];
+  const prevOk=cv.length>1&&Math.max.apply(null,cv.map(c=>n(c.previsto)))>=0.9;
+  const ref=o.dadosAte||(cv.length?cv[cv.length-1].data:null);
+  const contrato=n(o.contrato)>0?n(o.contrato):null;
+  const pag=(feed.lanc||[]).filter(l=>l.obra===o.nome&&l.tipo==='entrada'&&!l.interno&&(l.status==='pago'||l.status==='previsto'))
+    .map(l=>({data:l.data,tipo:String(l.categoria||'Pagamento'),valor:n(l.valor),status:l.status})).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
+  const recebido=pag.filter(p=>p.status==='pago').reduce((t,p)=>t+p.valor,0);
+  const etapas=(Array.isArray(o.etapas)?o.etapas:[]).map(e=>({nome:String(e.nome||''),pct:Math.max(0,Math.min(1,n(e.pct))),inicio:e.inicio||null,fim:e.fim||null,inicioReal:e.inicioReal||null,fimReal:e.fimReal||null,
+    atrasada:!!(e.fim&&ref&&e.fim<ref&&n(e.pct)<0.999)}));
+  const entregas=(feed.entregas||[]).filter(e=>e.obra===o.nome).map(e=>({data:e.data,tipo:String(e.tipo||'Relatório'),avanco:e.avanco==null?null:n(e.avanco),resumo:String(e.resumo||''),prazo:String(e.prazo||'')}))
+    .sort((a,b)=>String(b.data).localeCompare(String(a.data))).slice(0,12);
+  return {v:1,obra:{nome:String(o.nome),situacao:o.situacao||null,avanco:o.avanco==null?null:n(o.avanco),dadosAte:ref},
+    fin:{contrato,recebido,saldo:contrato!==null?Math.max(0,contrato-recebido):null,pagamentos:pag},
+    etapas,prevOk,curva:cv.map(c=>({data:c.data,previsto:prevOk?n(c.previsto):null,realizado:c.realizado==null?null:n(c.realizado)})),entregas};
+}
+async function publicarClientes(opts){
+  opts=opts||{};const f=pj(await lerDoc('empresa','feed'));if(!f||!Array.isArray(f.obras))return {estado:'sem feed'};
+  let esc=0;
+  for(const o of f.obras){
+    if(!o||!o.nome||!(o.id||o.nome))continue;const id=slugObra(o),j=JSON.stringify(clienteDoc(f,o));
+    const at=await lerDoc('clientes',id);
+    if(at&&at.json===j)continue;
+    if(!opts.dry)await setDoc(doc(fs,'clientes',id),{json:j,atualizado:new Date().toISOString()});esc++;
+  }
+  return {estado:'ok',escritos:esc};
+}
+async function gerarConvite(obraNome){
+  const f=pj(await lerDoc('empresa','feed')),o=f&&(f.obras||[]).find(x=>x.nome===obraNome);if(!o)throw new Error('obra não encontrada');
+  const b=new Uint8Array(18);crypto.getRandomValues(b);const code=Array.from(b,x=>x.toString(36).padStart(2,'0')).join('').slice(0,24);
+  await setDoc(doc(fs,'convites',code),{obra:slugObra(o),nome:o.nome,usado:false,expira:Timestamp.fromDate(new Date(Date.now()+7*864e5))});
+  return location.origin+'/cliente.html?c='+code;
+}
+async function acessosObra(obraNome){
+  const f=pj(await lerDoc('empresa','feed')),o=f&&(f.obras||[]).find(x=>x.nome===obraNome);if(!o)return [];
+  const q=await getDocs(query(collection(fs,'acessos'),where('obra','==',slugObra(o))));return q.docs.map(d=>({uid:d.id}));
+}
 let sincEmCurso=false;
 async function sincPlanilha(user,opts){
   opts=opts||{};if(sincEmCurso)return {estado:'ocupado'};sincEmCurso=true;
@@ -1149,7 +1192,7 @@ onAuthStateChanged(auth,async user=>{
     await signOut(auth);showLogin('Acesso restrito.',user.email+' não tem permissão para este painel.');return}
   $('phLogin').hidden=true;$('phSair').hidden=false;$('phSair').textContent='Sair ('+user.email+')';
   if(!started){started=true;const api=makeApi(user);window.__fb=api;window.__phReady(api)}
-  if(roleOf(user.email)==='dono'){$('btnSyncNow').hidden=false;$('btnSyncNow').onclick=()=>pedirSync(user,false);mostraAtualizado();window.__fb.sincPlanilha=o=>sincPlanilha(user,o);pedirSync(user,true);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-ultimaSinc>600000)pedirSync(user,true)})}
+  if(roleOf(user.email)==='dono'){$('btnSyncNow').hidden=false;$('btnSyncNow').onclick=()=>pedirSync(user,false);mostraAtualizado();window.__fb.sincPlanilha=o=>sincPlanilha(user,o);window.__fb.publicarClientes=publicarClientes;window.__fb.gerarConvite=gerarConvite;window.__fb.acessosObra=acessosObra;window.__fb.clienteDoc=clienteDoc;publicarClientes().catch(e=>console.warn('clientes',e));pedirSync(user,true);document.addEventListener('visibilitychange',()=>{if(!document.hidden&&Date.now()-ultimaSinc>600000)pedirSync(user,true)})}
 });
 $('phlBtn').onclick=async()=>{
   $('phlBtn').disabled=true;$('phlErr').textContent='';
@@ -2358,7 +2401,7 @@ function curvaHTML(cv0,temPrev,refD){
 function renderObraDet(o){
   const i=obInfo(o),s=i.s,E=i.E,sub=OB.sub,n=nnum;
   const subs=[['quadro','Quadro'],['resumo','Resumo'],['crono','Cronograma'],['fin','Financeiro'],['equipe','Equipe']];
-  let h=`<div class="ob-back"><button class="chip-btn" id="obBack">← Obras</button><h2>${esc(o.nome)}</h2>${statusBadge(o,i)}${i.ref?`<span class="sub" style="margin:0">Dados de ${i.ref.slice(8)}/${i.ref.slice(5,7)}/${i.ref.slice(0,4)}</span>`:''}<button class="chip-btn" id="obResumo" style="margin-left:auto">Resumo da semana</button></div><div class="ob-sub">${subs.map(x=>`<button class="chip-btn" data-sub="${x[0]}" aria-pressed="${sub===x[0]}">${x[1]}</button>`).join('')}</div>`;
+  let h=`<div class="ob-back"><button class="chip-btn" id="obBack">← Obras</button><h2>${esc(o.nome)}</h2>${statusBadge(o,i)}${i.ref?`<span class="sub" style="margin:0">Dados de ${i.ref.slice(8)}/${i.ref.slice(5,7)}/${i.ref.slice(0,4)}</span>`:''}<button class="chip-btn" id="obResumo" style="margin-left:auto">Resumo da semana</button>${window.__fb&&window.__fb.gerarConvite?'<button class="chip-btn" id="obAcesso">Acesso do cliente</button>':''}</div><div class="ob-sub">${subs.map(x=>`<button class="chip-btn" data-sub="${x[0]}" aria-pressed="${sub===x[0]}">${x[1]}</button>`).join('')}</div>`;
   const fmtD=v=>v===null?'–':(v>0?'+':'')+v.toFixed(1).replace('.',',')+' pontos';
   const kpis=`<div class="ob-kpis">
     <div class="ob-kpi"><span>Avanço físico</span><b>${i.av===null?'–':pct(i.av)}</b><small>${E.length?E.filter(e=>e.pct>=.999).length+' de '+E.length+' etapas concluídas':'sem diário de obra'}</small></div>
@@ -2569,6 +2612,11 @@ window.__phaeng={S,get db(){return db},render,go};
   document.addEventListener('click',function(e){
     var b=e.target.closest('#obResumo');
     if(b&&OB.sel){var o=OBRAS().find(function(x){return x.nome===OB.sel});if(!o)return;document.getElementById('semT').textContent='Resumo da semana · '+o.nome;document.getElementById('semTxt').value=semanaTexto(o);document.getElementById('dlgSem').showModal();return}
+    if(e.target.closest('#obAcesso')&&OB.sel){var ob=OBRAS().find(function(x){return x.nome===OB.sel});if(!ob)return;document.getElementById('accT').textContent='Acesso do cliente · '+ob.nome;document.getElementById('accLink').value='';document.getElementById('dlgAcc').dataset.obra=ob.nome;document.getElementById('dlgAcc').showModal();
+      if(window.__fb.acessosObra)window.__fb.acessosObra(ob.nome).then(function(a){document.getElementById('accInfo').textContent='O cliente vê só esta obra (andamento, etapas, pagamentos e relatórios). Gere um convite e envie o link: ele mesmo cria a senha. O link vale 7 dias e só funciona uma vez. '+(a.length?'Acessos ativos nesta obra: '+a.length+'.':'Ainda sem acesso ativo.')}).catch(function(){});return}
+    if(e.target.closest('#accGen')){var nm=document.getElementById('dlgAcc').dataset.obra,bt=e.target.closest('#accGen');bt.disabled=true;window.__fb.gerarConvite(nm).then(function(l){document.getElementById('accLink').value=l;toast('Convite gerado')}).catch(function(){toast('Não consegui gerar o convite')}).then(function(){bt.disabled=false});return}
+    if(e.target.closest('#accCopy')){var ta2=document.getElementById('accLink');if(!ta2.value)return;ta2.select();if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta2.value).then(function(){toast('Link copiado')},function(){document.execCommand('copy');toast('Link copiado')});else{document.execCommand('copy');toast('Link copiado')}return}
+    if(e.target.closest('#accX')){document.getElementById('dlgAcc').close();return}
     if(e.target.closest('#semX')){document.getElementById('dlgSem').close();return}
     if(e.target.closest('#semCopy')){var ta=document.getElementById('semTxt'),ok=function(){toast('Texto copiado')};
       if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta.value).then(ok,function(){ta.select();document.execCommand('copy');ok()});else{ta.select();document.execCommand('copy');ok()}}
