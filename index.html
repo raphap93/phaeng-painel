@@ -7,6 +7,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="PHAENG">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PHAENG">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>PHAENG Financeiro</title>
 <meta name="theme-color" content="#fafaf8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -869,6 +875,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
 <dialog id="dlgResumo" class="resumo"><div class="rs-bar"><button class="btn" id="btnPrint">Imprimir ou salvar em PDF</button><button class="btn ghost" id="btnResumoX">Fechar</button></div><article class="sheet" id="resumoBody"></article></dialog>
 <dialog id="dlgAg"><form class="dlg" id="fAg" method="dialog" novalidate></form></dialog>
 <dialog id="dlgCfg"><div class="dlg" id="cfgBody"></div></dialog>
+<dialog id="dlgSem"><div class="dlg"><h3 class="h3" id="semT">Resumo da semana</h3><p class="sub">Rascunho montado só com dados do painel (anomalias e notas internas ficam de fora). Revise e edite antes de enviar ao cliente.</p><textarea id="semTxt" rows="18" spellcheck="true"></textarea><div class="sem-bar"><button class="btn" id="semCopy" type="button">Copiar texto</button><button class="btn ghost" id="semX" type="button">Fechar</button></div></div></dialog>
 <div class="toast" id="toast" role="status"><span id="toastTxt"></span><button id="toastBtn">Desfazer</button></div>
 <script type="application/json" id="phaeng-feed">{}</script>
 <div id="phLogin" hidden>
@@ -881,7 +888,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   </div>
 </div>
 <button id="phSair" type="button" hidden title="Sair da conta">Sair</button>
-<div id="phVer" aria-hidden="true">v2026-11-15a</div>
+<div id="phVer" aria-hidden="true">v2026-11-15b</div>
 <style>
 #phLogin{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:#f4f1ea;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #phLogin[hidden]{display:none}
@@ -999,6 +1006,20 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   .oc-f{grid-template-columns:1fr .85fr 1.1fr}
 }
 @media(max-width:560px){.cprint{display:none}}
+
+/* cartão da obra: curva miniatura, alertas e resumo da semana */
+.oc-sp{display:flex;align-items:center;gap:12px;min-height:46px}
+.oc-sp .sp-g{flex:1;min-width:0;height:44px}.oc-sp svg{width:100%;height:44px;display:block}
+.oc-sp .sp-t{flex:none;max-width:42%;text-align:right;font-size:12px;color:var(--muted);line-height:1.3}
+.oc-sp .sp-t b{display:block;color:var(--ink);font-weight:600}.oc-sp .sp-t b.bad{color:var(--rust)}
+.oc-sp .sp-t small{display:block;font-size:11px}
+.sp-vazio{font-size:12px;color:var(--muted);border:1px dashed var(--line);border-radius:10px;padding:10px 12px;width:100%;text-align:center}
+.oc-al{display:flex;flex-wrap:wrap;gap:6px;min-height:26px;align-content:flex-start}
+.al{font:600 11.5px var(--text);padding:4px 9px;border-radius:999px;white-space:nowrap}
+.al.r{background:#fbeae6;color:#c9372c}.al.y{background:#fbf2d6;color:#8a6200}.al.n{background:var(--sage-l);color:var(--muted)}.al.ok{background:#e5f3ec;color:#1f845a}
+#semTxt{box-sizing:border-box;width:100%;min-height:340px;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font:14px/1.55 var(--text);resize:vertical;background:#fff;color:var(--ink)}
+.sem-bar{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+#dlgSem{width:min(620px,92vw);max-width:92vw}#dlgSem .dlg{min-width:0;box-sizing:border-box}
 </style>
 <script>
 /* ponte: o painel chama google.script.run.apiLoad/apiSave; aqui isso vira Firebase (login Google + Firestore) */
@@ -1503,7 +1524,8 @@ function renderMdo(o,boxArg){
   const box=boxArg||$('#obraMdo'),m=o&&o.maoDeObra;
   if(!m){box.hidden=true;box.innerHTML='';return}
   const n=v=>typeof v==='number'&&isFinite(v)?v:0,acer=n(m.acertado),pago=n(m.pago),falta=acer-pago,orc=n(m.contratado);
-  const pr=(Array.isArray(m.prestadores)?m.prestadores:[]).filter(p=>n(p.acertado)||n(p.pago)||n(p.contratado))
+  const pr0={};(Array.isArray(m.prestadores)?m.prestadores:[]).forEach(p=>{const k=String(p.nome||'Sem nome').trim().toLowerCase(),q=pr0[k]||(pr0[k]={nome:p.nome,acertado:0,pago:0,contratado:0,ultimoPagamento:''});q.acertado+=n(p.acertado);q.pago+=n(p.pago);q.contratado+=n(p.contratado);if((p.ultimoPagamento||'')>q.ultimoPagamento)q.ultimoPagamento=p.ultimoPagamento});
+  const pr=Object.values(pr0).filter(p=>n(p.acertado)||n(p.pago)||n(p.contratado))
     .sort((a,b)=>(n(b.acertado)-n(b.pago))-(n(a.acertado)-n(a.pago)));
   const dt=d=>{const x=/^(\d{4})-(\d{2})-(\d{2})/.exec(d||'');return x?x[3]+'/'+x[2]+'/'+x[1]:''};
   let h='<h3 class="h3">Mão de obra</h3><p class="sub">Quanto foi acertado com os prestadores, quanto já foi pago e quanto falta.</p>';
@@ -2266,9 +2288,9 @@ function obInfo(o){
   const pc=cv[ri],ref=pc?pc.data:null;
   let av=pc&&E.length?pc.realizado:null;
   if(av===null){const l=lastAvanco(o.nome);av=l===null?null:l/100}
-  const temPrev=cv.some(c=>c.previsto>0),prev=temPrev&&pc?pc.previsto:null;
+  const temPrev=cv.some(c=>c.previsto>0),prevOk=temPrev&&Math.max(...cv.map(c=>c.previsto||0))>=0.9,prev=prevOk&&pc?pc.previsto:null;
   const des=prev===null||av===null?null:(av-prev)*100,m=o.maoDeObra||null;
-  return{s,E,cv,av,prev,des,temPrev,ref,falta:m?nnum(m.acertado)-nnum(m.pago):null,rec:s.contrato?Math.min(1,s.rec/s.contrato):0};
+  return{s,E,cv,av,prev,des,temPrev,prevOk,ref,falta:m?nnum(m.acertado)-nnum(m.pago):null,rec:s.contrato?Math.min(1,s.rec/s.contrato):0};
 }
 function statusBadge(o,i){
   if(!emAndamento(o))return '<span class="badge ok">Concluída</span>';
@@ -2336,11 +2358,11 @@ function curvaHTML(cv0,temPrev,refD){
 function renderObraDet(o){
   const i=obInfo(o),s=i.s,E=i.E,sub=OB.sub,n=nnum;
   const subs=[['quadro','Quadro'],['resumo','Resumo'],['crono','Cronograma'],['fin','Financeiro'],['equipe','Equipe']];
-  let h=`<div class="ob-back"><button class="chip-btn" id="obBack">← Obras</button><h2>${esc(o.nome)}</h2>${statusBadge(o,i)}${i.ref?`<span class="sub" style="margin:0">Dados de ${i.ref.slice(8)}/${i.ref.slice(5,7)}/${i.ref.slice(0,4)}</span>`:''}</div><div class="ob-sub">${subs.map(x=>`<button class="chip-btn" data-sub="${x[0]}" aria-pressed="${sub===x[0]}">${x[1]}</button>`).join('')}</div>`;
+  let h=`<div class="ob-back"><button class="chip-btn" id="obBack">← Obras</button><h2>${esc(o.nome)}</h2>${statusBadge(o,i)}${i.ref?`<span class="sub" style="margin:0">Dados de ${i.ref.slice(8)}/${i.ref.slice(5,7)}/${i.ref.slice(0,4)}</span>`:''}<button class="chip-btn" id="obResumo" style="margin-left:auto">Resumo da semana</button></div><div class="ob-sub">${subs.map(x=>`<button class="chip-btn" data-sub="${x[0]}" aria-pressed="${sub===x[0]}">${x[1]}</button>`).join('')}</div>`;
   const fmtD=v=>v===null?'–':(v>0?'+':'')+v.toFixed(1).replace('.',',')+' pontos';
   const kpis=`<div class="ob-kpis">
     <div class="ob-kpi"><span>Avanço físico</span><b>${i.av===null?'–':pct(i.av)}</b><small>${E.length?E.filter(e=>e.pct>=.999).length+' de '+E.length+' etapas concluídas':'sem diário de obra'}</small></div>
-    <div class="ob-kpi"><span>Previsto na mesma data</span><b>${i.prev===null?'–':pct(i.prev)}</b><small class="${i.des!==null&&i.des<-1?'bad':'good'}">${i.des===null?'sem cronograma previsto':'desvio '+fmtD(i.des)}</small></div>
+    <div class="ob-kpi"><span>Previsto na mesma data</span><b>${i.prev===null?'–':pct(i.prev)}</b><small class="${i.des!==null&&i.des<-1?'bad':'good'}">${i.des===null?(i.temPrev&&!i.prevOk?'cronograma previsto incompleto':'sem cronograma previsto'):'desvio '+fmtD(i.des)}</small></div>
     <div class="ob-kpi"><span>Contrato</span><b class="sens">${s.contrato?fmt(s.contrato):'não informado'}</b><small class="sens">recebido ${fmt(s.rec)}</small></div>
     <div class="ob-kpi"><span>Falta receber</span><b class="sens">${s.contrato?fmt(s.falta):'–'}</b><small class="sens">resultado ${sgn(s.res)}</small></div></div>`;
   if(sub==='quadro'){
@@ -2352,12 +2374,12 @@ function renderObraDet(o){
     h+=E.length?`<p class="sub">Cada cartão é uma etapa do diário de obra e muda de coluna sozinho conforme o avanço lançado.</p><div class="kb">${col('A fazer','#b9b9b2',A)}${col('Em andamento','var(--blue)',B)}${col('Concluídas','var(--green)',C)}</div>`:'<div class="ob-empty">Esta obra ainda não tem diário de obra (Acompanhamento) com etapas. Quando o diário estiver na pasta 05 Diário de Obra, o quadro aparece aqui. Os dados financeiros já estão na aba Financeiro.</div>';
   }else if(sub==='resumo'){
     h+=kpis;
-    h+=`<div class="panel ob-sec"><div class="ob-split"><div style="text-align:center">${donut(i.av||0)}<div style="font-size:.8rem;color:#6b6b6b;margin-top:4px">Progresso geral</div></div><div>${i.cv.length>1?curvaHTML(i.cv,i.temPrev,i.ref):'<div class="ob-empty">A curva S aparece quando o diário da obra tiver avanço lançado.</div>'}</div></div></div>`;
+    h+=`<div class="panel ob-sec"><div class="ob-split"><div style="text-align:center">${donut(i.av||0)}<div style="font-size:.8rem;color:#6b6b6b;margin-top:4px">Progresso geral</div></div><div>${i.cv.length>1?curvaHTML(i.cv,i.temPrev&&i.prevOk,i.ref):'<div class="ob-empty">A curva S aparece quando o diário da obra tiver avanço lançado.</div>'}</div></div></div>`;
     const em=E.filter(e=>e.pct>0&&e.pct<.999);
     h+=`<div class="panel ob-sec"><h3 class="h3">Etapas em andamento</h3>${em.length?em.map(e=>`<div class="ob-cost"><span>${esc(e.nome)}</span><div class="pbar"><i style="width:${e.pct*100}%"></i></div><b>${Math.round(e.pct*100)}%</b></div>`).join(''):'<p class="sub">Nenhuma etapa parcial agora.</p>'}</div>`;
   }else if(sub==='crono'){
     h+=`<div class="panel ob-sec"><h3 class="h3">Cronograma</h3><p class="sub">Barra fina cinza é o previsto; a barra grossa é o realizado, preenchida até o quanto da etapa já foi feito.</p>${E.length?ganttHTML(E):'<div class="ob-empty">Esta obra ainda não tem diário de obra com etapas.</div>'}</div>`;
-    if(i.cv.length>1)h+=`<div class="panel ob-sec"><h3 class="h3">Curva S: previsto × realizado</h3>${curvaHTML(i.cv,i.temPrev,i.ref)}</div>`;
+    if(i.cv.length>1)h+=`<div class="panel ob-sec"><h3 class="h3">Curva S: previsto × realizado</h3>${curvaHTML(i.cv,i.temPrev&&i.prevOk,i.ref)}</div>`;
   }else if(sub==='fin'){
     const moO=E.reduce((a,e)=>a+n(e.moOrcada),0),moA=E.reduce((a,e)=>a+n(e.moAcertada),0);
     h+=`<div class="ob-kpis"><div class="ob-kpi"><span>Contrato</span><b class="sens">${s.contrato?fmt(s.contrato):'não informado'}</b></div><div class="ob-kpi"><span>Recebido do proprietário</span><b class="sens">${fmt(s.rec)}</b><small class="sens">${s.contrato?pct(i.rec)+' do contrato':''}</small></div><div class="ob-kpi"><span>Custos pagos</span><b class="sens">${fmt(s.custo)}</b><small>${s.rec?pct(s.custo/s.rec)+' do recebido':''}</small></div><div class="ob-kpi"><span>Resultado</span><b class="sens ${s.res<0?'bad':''}">${sgn(s.res)}</b><small>${pct(s.margem)} de margem</small></div></div>`;
@@ -2487,10 +2509,74 @@ window.__phaeng={S,get db(){return db},render,go};
   var DIAS=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
   var dm=function(s){return s.slice(8)+'/'+s.slice(5,7)};
   function kcard(c){return '<div class="kc"><span class="l"><i style="background:'+c.color+'"></i>'+c.l+'</span><b class="num'+(c.sens?' sens':'')+'">'+c.v+'</b><small class="'+(c.cls||'')+'">'+c.s+'</small></div>'}
+
+  /* curva do realizado em miniatura (+ previsto tracejado quando o cronograma cobre a obra toda) */
+  function spark(i){
+    var cv=i.cv||[];
+    if(cv.length<2||i.av===null)return '<span class="sp-vazio">Curva S aparece quando o diário tiver avanço lançado</span>';
+    var T=function(d){return new Date(d+'T12:00:00').getTime()};
+    var lim=i.prevOk?cv[cv.length-1].data:(i.ref||cv[cv.length-1].data);
+    var pts=cv.filter(function(c){return c.data<=lim});if(pts.length<2)pts=cv.slice(0,2);
+    var t0=T(pts[0].data),t1=T(pts[pts.length-1].data)||t0+1,W=180,H=44;
+    var X=function(c){return (T(c.data)-t0)/Math.max(1,t1-t0)*(W-8)+4},Y=function(v){return H-4-Math.max(0,Math.min(1,v))*(H-8)};
+    var real=pts.filter(function(c){return !i.ref||c.data<=i.ref});
+    var path=function(a,k){return a.map(function(c,n){return (n?'L':'M')+X(c).toFixed(1)+' '+Y(c[k]).toFixed(1)}).join(' ')};
+    var last=real[real.length-1]||pts[0];
+    var area=path(real,'realizado')+' L'+X(last).toFixed(1)+' '+(H-4)+' L'+X(real[0]).toFixed(1)+' '+(H-4)+' Z';
+    var svg='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Curva de avanço realizado"><path d="'+area+'" fill="var(--blue)" opacity=".10"/>'+
+      (i.prevOk?'<path d="'+path(pts,'previsto')+'" fill="none" stroke="#9a9a92" stroke-width="1.5" stroke-dasharray="4 3" vector-effect="non-scaling-stroke"/>':'')+
+      '<path d="'+path(real,'realizado')+'" fill="none" stroke="var(--blue)" stroke-width="2.2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>';
+    var dv=i.prevOk&&i.des!==null?(i.des>=0?'+':'')+Math.round(i.des)+' p.p. vs previsto':'cronograma incompleto';
+    return '<div class="sp-g">'+svg+'</div><span class="sp-t"><b class="'+(i.prevOk&&i.des!==null&&i.des<-1?'bad':'')+'">'+dv+'</b>'+(i.prevOk?'':'<small>só o realizado</small>')+'</span>';
+  }
+  /* alertas por obra, sem valores (não precisam do modo privacidade) */
+  function obAlertas(o,i,hoje){
+    var a=[],n=nnum;
+    if(i.prevOk&&i.des!==null){if(i.des<-5)a.push({c:'r',t:'Atrasada '+Math.abs(Math.round(i.des))+' p.p.'});else if(i.des<-1)a.push({c:'y',t:'Levemente atrasada'})}
+    var ds=(FEED.entregas||[]).filter(function(e){return e.obra===o.nome}).map(function(e){return e.data}).sort(),ult=ds[ds.length-1];
+    if(!ult)a.push({c:'y',t:'Sem relatório de entrega'});
+    else{var dias=Math.round((new Date(hoje+'T12:00:00')-new Date(ult+'T12:00:00'))/864e5);if(dias>8)a.push({c:'y',t:'Sem relatório há '+dias+' dias'})}
+    var mo=i.E.filter(function(e){return n(e.moOrcada)>0&&n(e.moAcertada)>n(e.moOrcada)+1});
+    if(mo.length)a.push({c:'r',t:'MO acima do orçado ('+mo.length+' etapa'+(mo.length>1?'s':'')+')'});
+    var late=L().filter(function(l){return l.status==='previsto'&&l.tipo==='entrada'&&!l.interno&&l.obra===o.nome&&l.data<hoje});
+    if(late.length)a.push({c:'r',t:'Cobrança atrasada'});
+    if(live()){var pend=notasPorObra().deps.filter(function(d){return d._st!=='ok'&&d.obra===o.nome});if(pend.length)a.push({c:'y',t:'Depósito sem nota fiscal'})}
+    var rev=(FEED.lanc||[]).filter(function(l){return l.obra===o.nome&&l.status==='revisar'});
+    if(rev.length)a.push({c:'y',t:rev.length+' lançamento'+(rev.length>1?'s':'')+' a revisar'});
+    return a.sort(function(x,y){return (x.c==='r'?0:1)-(y.c==='r'?0:1)});
+  }
+  function alertasHTML(a){
+    if(!a.length)return '<span class="al ok">Sem alertas</span>';
+    return a.slice(0,3).map(function(x){return '<span class="al '+x.c+'">'+esc(x.t)+'</span>'}).join('')+(a.length>3?'<span class="al n">+'+(a.length-3)+'</span>':'');
+  }
+  /* resumo da semana para o cliente (rascunho editável) */
+  function semanaTexto(o){
+    var i=obInfo(o),s=i.s,E=i.E,fd=function(d){return d?d.slice(8)+'/'+d.slice(5,7)+'/'+d.slice(0,4):''};
+    var ent=(FEED.entregas||[]).filter(function(e){return e.obra===o.nome}).sort(function(a,b){return a.data.localeCompare(b.data)}).pop();
+    var feitas=E.filter(function(e){return e.pct>=.999}),and=E.filter(function(e){return e.pct>0&&e.pct<.999}),falta=E.filter(function(e){return e.pct<=0});
+    var sem=i.ref?feitas.filter(function(e){return e.fimReal&&e.fimReal>addDays(i.ref,-7)}):[];
+    var t='*PHAENG Engenharia · Resumo da semana*\nObra: '+o.nome+'\n'+(i.ref?'Posição em '+fd(i.ref)+'\n':'')+'\n';
+    if(i.av!==null){t+='Avanço físico: '+pct(i.av)+(E.length?' ('+feitas.length+' de '+E.length+' etapas concluídas)':'')+'\n';if(i.prevOk&&i.prev!==null)t+='Previsto no cronograma: '+pct(i.prev)+'\n'}
+    else t+='Avanço físico: ainda sem relatório.\n';
+    if(sem.length)t+='\nConcluído na semana:\n'+sem.map(function(e){return '• '+e.nome}).join('\n')+'\n';
+    if(and.length)t+='\nEm andamento:\n'+and.map(function(e){return '• '+e.nome+' ('+Math.round(e.pct*100)+'%)'}).join('\n')+'\n';
+    if(falta.length)t+='\nAinda a iniciar:\n'+falta.map(function(e){return '• '+e.nome}).join('\n')+'\n';
+    if(ent&&ent.resumo)t+='\nResumo do relatório de '+fd(ent.data)+':\n'+ent.resumo+'\n';
+    if(ent&&ent.prazo)t+='\nPróximos passos:\n'+ent.prazo+'\n';
+    if(s.contrato>0)t+='\nFinanceiro:\n• Contrato: '+fmt(s.contrato)+'\n• Recebido: '+fmt(s.rec)+' ('+pct(i.rec)+')\n• Saldo a receber: '+fmt(s.falta)+'\n';
+    return t.trim();
+  }
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('#obResumo');
+    if(b&&OB.sel){var o=OBRAS().find(function(x){return x.nome===OB.sel});if(!o)return;document.getElementById('semT').textContent='Resumo da semana · '+o.nome;document.getElementById('semTxt').value=semanaTexto(o);document.getElementById('dlgSem').showModal();return}
+    if(e.target.closest('#semX')){document.getElementById('dlgSem').close();return}
+    if(e.target.closest('#semCopy')){var ta=document.getElementById('semTxt'),ok=function(){toast('Texto copiado')};
+      if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(ta.value).then(ok,function(){ta.select();document.execCommand('copy');ok()});else{ta.select();document.execCommand('copy');ok()}}
+  });
   function ocard(o,hoje){
     var i=obInfo(o),cls,txt;
     if(!(i.s.contrato>0)||o.revisar){cls='y';txt='Revisar'}
-    else if(i.des===null){cls='n';txt='Em andamento'}
+    else if(i.des===null){cls='n';txt=i.temPrev&&!i.prevOk?'Sem cronograma':'Em andamento'}
     else if(i.des<-5){cls='r';txt='Atrasada'}
     else if(i.des<-1){cls='y';txt='Levemente atrasada'}
     else{cls='g';txt='No prazo'}
@@ -2504,6 +2590,7 @@ window.__phaeng={S,get db(){return db},render,go};
     return '<button class="oc" data-open="'+esc(o.nome)+'"><div class="oc-h"><i class="sem '+cls+'"></i><h3>'+esc(o.nome)+'</h3><span class="st '+cls+'">'+txt+'</span></div>'+
       '<div class="oc-av"><div class="r"><span>Avanço físico'+(i.ref?' · '+dm(i.ref):'')+'</span><b>'+(i.av===null?'sem diário':pct(i.av))+'</b></div><div class="pbar"><i style="width:'+((i.av||0)*100)+'%"></i>'+(i.prev!==null?'<b style="left:'+Math.min(100,i.prev*100)+'%" title="Previsto até hoje"></b>':'')+'</div>'+
       '<div class="r" style="margin:6px 0 0"><span>'+(E.length?feitas+'/'+E.length+' etapas':'sem etapas')+'</span><span>'+(atual?esc(atual.nome)+' '+Math.round(atual.pct*100)+'%':'')+'</span></div></div>'+
+      '<div class="oc-sp">'+spark(i)+'</div><div class="oc-al">'+alertasHTML(obAlertas(o,i,hoje))+'</div>'+
       '<div class="oc-next"><small>'+esc(pwhen)+'</small><span>'+esc(ptxt)+'</span></div>'+
       '<div class="oc-f"><span>Contrato<b class="sens">'+(i.s.contrato?fmt(i.s.contrato):'a informar')+'</b></span><span>Recebido<b class="sens">'+(i.s.contrato?pct(i.rec):fmt(i.s.rec))+'</b></span><span>A pagar (MO)<b class="sens">'+(i.falta===null?'–':fmt(Math.max(0,i.falta)))+'</b></span></div></button>';
   }
