@@ -474,8 +474,8 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
 .kb-card b{font-size:.9rem;line-height:1.3}.kb-card.done{opacity:.85}
 .kb-meta{display:flex;justify-content:space-between;gap:8px;font-size:.76rem;color:#6b6b6b}.kb-meta .over{color:var(--rust);font-weight:600}
 .kb-vazio{color:#9a9a94;text-align:center;padding:10px}
-/* ---------- estilo Trello (Obras) ---------- */
-.ob-board{background:linear-gradient(135deg,#1d3a8a,#2f5bd6 55%,#4b7bec);border-radius:var(--r-lg);padding:18px;margin:0 0 20px}
+/* ---------- estilo cartões (Obras) ---------- */
+.ob-board{background:linear-gradient(135deg,#4a5347,#677163 58%,#7d8779);border-radius:var(--r-lg);padding:18px;margin:0 0 20px}
 .ob-board .ob-back h2,.ob-board .ob-bt{color:#fff}.ob-board>.sub,.ob-board .ob-back .sub{color:rgba(255,255,255,.85)}
 .ob-board .chip-btn{background:rgba(255,255,255,.18);border-color:transparent;color:#fff}.ob-board .chip-btn[aria-pressed="true"]{background:#fff;color:#172b4d}
 .ob-bh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 16px;color:#fff}.ob-bh h2{margin:0;font-size:1.3rem;color:#fff}
@@ -881,6 +881,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   </div>
 </div>
 <button id="phSair" type="button" hidden title="Sair da conta">Sair</button>
+<div id="phVer" aria-hidden="true">v2026-11-14b</div>
 <style>
 #phLogin{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:#f4f1ea;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #phLogin[hidden]{display:none}
@@ -893,7 +894,9 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
 #phlBtn:hover{background:#2b2b2b}#phlBtn:disabled{opacity:.6;cursor:wait}
 .phl-err{color:#b3261e!important;margin:14px 0 0!important;min-height:1em}
 #phSair{position:fixed;left:12px;bottom:12px;z-index:50;border:1px solid rgba(0,0,0,.15);background:rgba(255,255,255,.9);color:#444;border-radius:999px;font:500 12px system-ui,sans-serif;padding:6px 12px;cursor:pointer;backdrop-filter:blur(6px)}
-@media print{#phSair,#phLogin{display:none!important}}
+#phVer{position:fixed;right:8px;bottom:3px;z-index:40;font:500 10px system-ui,sans-serif;color:#6b7468;opacity:.55;pointer-events:none}
+@media(min-width:1000px){#phVer{right:auto;left:20px;bottom:58px}}
+@media print{#phSair,#phLogin,#phVer{display:none!important}}
 </style>
 <script>
 /* ponte: o painel chama google.script.run.apiLoad/apiSave; aqui isso vira Firebase (login Google + Firestore) */
@@ -2154,7 +2157,7 @@ function renderObraHub(lista){
       <div class="tc-ch"><span>Contrato<b class="sens">${i.s.contrato?fmt(i.s.contrato):'a informar'}</b></span><span>Recebido<b class="sens">${i.s.contrato?pct(i.rec):fmt(i.s.rec)}</b></span></div>
       <div class="tc-r"><span>Mão de obra a pagar</span><b class="sens">${i.falta===null?'–':fmt(Math.max(0,i.falta))}</b></div></div></button>`};
   const col=(t,arr,vz)=>`<div class="tb-col"><div class="tb-h">${t}<span>${arr.length}</span></div>${arr.map(card).join('')||`<div class="tb-vazio">${vz}</div>`}</div>`;
-  $('#obHub').innerHTML=`<div class="ob-board"><div class="ob-bh"><h2>Obras</h2>${ref?`<span class="pl">Dados até ${ref.slice(8)}/${ref.slice(5,7)}/${ref.slice(0,4)}</span>`:''}<span class="pl">layout Trello · 14/11 22h</span><span class="pl">${a.length} em andamento · ${c.length} concluída${c.length==1?'':'s'}</span></div><div class="tb">${col('Em andamento',a,'Nenhuma obra em andamento.')}${col('Concluídas (a partir de hoje)',c,'As próximas obras entregues aparecem aqui, com todos os dados guardados.')}</div></div>`;
+  $('#obHub').innerHTML=`<div class="ob-board"><div class="ob-bh"><h2>Obras</h2>${ref?`<span class="pl">Dados até ${ref.slice(8)}/${ref.slice(5,7)}/${ref.slice(0,4)}</span>`:''}<span class="pl">${a.length} em andamento · ${c.length} concluída${c.length==1?'':'s'}</span></div><div class="tb">${col('Em andamento',a,'Nenhuma obra em andamento.')}${col('Concluídas (a partir de hoje)',c,'As próximas obras entregues aparecem aqui, com todos os dados guardados.')}</div></div>`;
 }
 function ganttHTML(E){
   const W=6*864e5,hoje=Date.now();
