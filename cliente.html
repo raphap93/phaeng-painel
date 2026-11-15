@@ -38,6 +38,17 @@ input:focus{outline:2px solid var(--blue);outline-offset:1px}
 .hide{display:none!important}
 svg{display:block;width:100%;height:130px}
 .leg{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:6px}.leg i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:4px}
+.gt-wrap{position:relative}
+.gt-ax{position:relative;height:18px;margin-bottom:4px;font-size:11px;color:var(--muted)}
+.gt-ax span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.gt-r{padding:9px 0;border-top:1px solid var(--line)}.gt-r:first-of-type{border-top:0}
+.gt-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:6px}.gt-h b{font-size:14px}
+.gt-t{position:relative;height:22px;background:#f5f4ee;border-radius:8px;overflow:hidden}
+.gt-p{position:absolute;top:3px;height:6px;border-radius:99px;background:#c9c8c0}
+.gt-a{position:absolute;top:11px;height:8px;border-radius:99px;background:#d5dafc;overflow:hidden}.gt-a i{display:block;height:100%;background:var(--blue)}
+.gt-a.ok{background:#cfe6da}.gt-a.ok i{background:var(--green)}.gt-a.atr{background:#f5d3ce}.gt-a.atr i{background:var(--rust)}
+.gt-hoje{position:absolute;top:0;bottom:0;width:2px;background:var(--rust);opacity:.75}
+.gt-d{font-size:11.5px;color:var(--muted);margin-top:4px}
 .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:22px}
 </style>
 </head>
@@ -143,6 +154,28 @@ function curvaSVG(j){
     '<path d="'+P(cv,'realizado')+'" fill="none" stroke="#2740e8" stroke-width="2.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>'+
     '<div class="leg"><span><i style="background:#2740e8"></i>Realizado</span>'+(j.prevOk?'<span><i style="background:#9a9a92"></i>Previsto</span>':'')+'</div>';
 }
+
+function gantt(j){
+  const et=(j.etapas||[]),T=d=>new Date(d+'T12:00:00').getTime(),temPrev=et.some(e=>e.inicio&&e.fim);
+  if(!temPrev)return '<div class="card"><h2>Cronograma</h2><p class="sub">O cronograma da obra será exibido aqui assim que for definido.</p></div>';
+  const ref=(j.obra&&j.obra.dadosAte)||null,ds=[];
+  et.forEach(e=>{[e.inicio,e.fim,e.inicioReal,e.fimReal].forEach(d=>{if(d)ds.push(T(d))})});if(ref)ds.push(T(ref));
+  const DAY=864e5,t0=Math.min.apply(null,ds)-2*DAY,t1=Math.max.apply(null,ds)+2*DAY,span=Math.max(DAY,t1-t0);
+  const X=t=>Math.max(0,Math.min(100,(t-t0)/span*100)),pctx=d=>X(T(d));
+  /* eixo: rótulos de mês */
+  let ax='';const dt0=new Date(t0);let m=new Date(dt0.getFullYear(),dt0.getMonth()+1,1);const nm=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  let last=-99;for(;m.getTime()<t1;m=new Date(m.getFullYear(),m.getMonth()+1,1)){const x=X(m.getTime());if(x-last<9)continue;ax+='<span style="left:'+x.toFixed(1)+'%">'+nm[m.getMonth()]+'</span>';last=x}
+  const hoje=ref?'<div class="gt-hoje" style="left:'+pctx(ref).toFixed(2)+'%"></div>':'';
+  const rows=et.slice().sort((a,b)=>String(a.inicio||a.inicioReal||'9').localeCompare(String(b.inicio||b.inicioReal||'9'))).map(e=>{
+    const feita=e.pct>=.999,cls=feita?'ok':e.atrasada?'atr':'',st=feita?['Concluída','p-ok']:e.atrasada?['Atrasada','p-atr']:e.pct>0?['Em andamento','p-and']:['A iniciar','p-no'];
+    let bars='';
+    if(e.inicio&&e.fim){const l=pctx(e.inicio),w=Math.max(.8,pctx(e.fim)-l);bars+='<div class="gt-p" style="left:'+l.toFixed(2)+'%;width:'+w.toFixed(2)+'%"></div>'}
+    const ri=e.inicioReal||(e.pct>0?e.inicio:null);
+    if(ri){const rf=e.fimReal||ref||ri,l=pctx(ri),w=Math.max(1.8,pctx(rf)-l);bars+='<div class="gt-a '+cls+'" style="left:'+l.toFixed(2)+'%;width:'+w.toFixed(2)+'%"><i style="width:'+Math.round(e.pct*100)+'%"></i></div>'}
+    const info=(e.inicio&&e.fim?'Previsto '+dm(e.inicio)+' a '+dm(e.fim):'Sem data prevista')+(e.fimReal?' · concluída em '+dm(e.fimReal):e.inicioReal?' · iniciada em '+dm(e.inicioReal):'');
+    return '<div class="gt-r"><div class="gt-h"><b>'+esc(e.nome)+'</b><span class="pill '+st[1]+'">'+st[0]+' · '+pc(e.pct)+'</span></div><div class="gt-t">'+bars+hoje+'</div><div class="gt-d">'+info+'</div></div>'}).join('');
+  return '<div class="card"><h2>Cronograma</h2><div class="gt-ax">'+ax+'</div><div class="gt-wrap">'+rows+'</div><div class="leg"><span><i style="background:#c9c8c0"></i>Previsto</span><span><i style="background:#2740e8"></i>Realizado</span>'+(ref?'<span><i style="background:#c9372c"></i>Posição em '+dm(ref)+'</span>':'')+'</div></div>';
+}
 function render(j,atual){
   const o=j.obra||{},f=j.fin||{},av=o.avanco==null?null:Math.max(0,Math.min(100,o.avanco));
   const et=j.etapas||[],atr=et.filter(e=>e.atrasada);
@@ -157,6 +190,7 @@ function render(j,atual){
   }else h+='<div class="card"><h2>Financeiro</h2><p class="sub">Os valores do contrato serão exibidos aqui após a formalização.</p>';
   if((f.pagamentos||[]).length)h+='<div style="margin-top:12px">'+f.pagamentos.map(p=>'<div class="pg"><div><b>'+esc(p.tipo)+'</b><p class="sub" style="margin:0">'+dt(p.data)+'</p></div><div style="text-align:right"><b>'+brl2(p.valor)+'</b><p style="margin:0"><span class="pill '+(p.status==='pago'?'p-ok':'p-y')+'">'+(p.status==='pago'?'Pago':'A pagar')+'</span></p></div></div>').join('')+'</div>';
   h+='</div>';
+  h+=gantt(j);
   const c=curvaSVG(j);if(c)h+='<div class="card"><h2>Evolução da obra</h2>'+c+'</div>';
   if(et.length)h+='<div class="card"><h2>Etapas</h2>'+et.map(e=>{const st=e.pct>=.999?['Concluída','p-ok']:e.atrasada?['Atrasada','p-atr']:e.pct>0?['Em andamento','p-and']:['A iniciar','p-no'];
     return '<div class="et"><div class="row"><b>'+esc(e.nome)+'</b><span class="pill '+st[1]+'">'+st[0]+'</span></div><p class="sub" style="margin:2px 0 0">'+pc(e.pct)+(e.fim?' · previsto até '+dm(e.fim):'')+(e.fimReal?' · concluída em '+dm(e.fimReal):'')+'</p><div class="mini"><i style="width:'+Math.round(e.pct*100)+'%"></i></div></div>'}).join('')+'</div>';
