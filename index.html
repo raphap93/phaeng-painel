@@ -889,7 +889,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   </div>
 </div>
 <button id="phSair" type="button" hidden title="Sair da conta">Sair</button>
-<div id="phVer" aria-hidden="true">v2026-11-16a</div>
+<div id="phVer" aria-hidden="true">v2026-11-16b</div>
 <style>
 #phLogin{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:#f4f1ea;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #phLogin[hidden]{display:none}
@@ -1180,23 +1180,25 @@ async function sincPlanilha(user,opts){
   try{
     const cred=await user.getIdToken();
     const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),90000);
-    let j;try{const pedir=async dr=>(await fetch(PONTE,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(dr?{t:cred,drive:true}:{t:cred}),signal:ctl.signal})).json();j=await pedir(true);if(j&&j.erro==='drive')j=await pedir(false)}finally{clearTimeout(to)}
+    let j;try{const pedir=async dr=>(await fetch(PONTE,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(dr?{t:cred,drive:true,pedir:!!opts.pedir}:{t:cred}),signal:ctl.signal})).json();j=await pedir(true);if(j&&j.erro==='drive')j=await pedir(false)}finally{clearTimeout(to)}
     if(!j||j.erro)return {estado:'erro',motivo:(j&&(j.motivo||j.erro))||'sem resposta'};
-    if(j.metaF1!=='ok')return {estado:'erro',motivo:'planilha em atualização (meta≠ok)'};
+    const emAtual=j.metaF1!=='ok';
+    if(emAtual&&!j.drive)return {estado:'erro',motivo:'planilha em atualização (meta≠ok)'};
     const [fe,fp]=await Promise.all([lerDoc('empresa','feed'),lerDoc('pessoal','feed')]);
     const atualE=pj(fe),atualP=pj(fp);
+    if(emAtual){if(!atualE)return {estado:'erro',motivo:'planilha em atualização (meta≠ok)'};j.empresa=atualE;j.pessoal=null}
     if(j.drive)try{j.empresa=mergeDrive(j.empresa,j.drive)}catch(e){console.warn('mergeDrive',e)}
     const txtE=JSON.stringify(j.empresa),mudouE=!fe||fe.json!==txtE;
     let mudouP=false,txtP=null;
     if(j.pessoal){txtP=JSON.stringify(j.pessoal);mudouP=!fp||fp.json!==txtP}
-    if(!mudouE&&!mudouP)return {estado:'igual'};
+    if(!mudouE&&!mudouP)return {estado:'igual',pedido:j.pedido||null,emAtual};
     if(mudouE){const m=feedValido(j.empresa,atualE,false);if(m)return {estado:'recusado',motivo:m}}
     if(mudouP){const m=feedValido(j.pessoal,atualP,true);if(m)return {estado:'recusado',motivo:m}}
     if(opts.dry)return {estado:'dry',mudouE,mudouP};
     const agora=new Date().toISOString();
     if(mudouE)await setDoc(doc(fs,'empresa','feed'),{json:txtE,atualizado:agora});
     if(mudouP)await setDoc(doc(fs,'pessoal','feed'),{json:txtP,atualizado:agora});
-    return {estado:'atualizado',mudouE,mudouP};
+    return {estado:'atualizado',mudouE,mudouP,pedido:j.pedido||null,emAtual};
   }catch(e){return {estado:'erro',motivo:(e&&e.name==='AbortError')?'demorou demais':'sem conexão'}}
   finally{sincEmCurso=false}
 }
@@ -1205,12 +1207,12 @@ async function pedirSync(user,auto){
   const b=$('btnSyncNow'),t=$('syncNowTxt');if(b.disabled)return;
   if(!auto){b.disabled=true;t.textContent='Sincronizando…'}
   ultimaSinc=Date.now();
-  const r=await sincPlanilha(user);
-  if(r.estado==='atualizado'){location.reload();return}
+  const r=await sincPlanilha(user,{pedir:!auto});
+  if(r.estado==='atualizado'){if(!auto){t.textContent=r.pedido==='pedido feito'?'Obras atualizadas · financeiro em até 1h':'Atualizado';await new Promise(z=>setTimeout(z,1800))}location.reload();return}
   if(!auto){
-    t.textContent=r.estado==='igual'?'Já está atualizado':r.estado==='recusado'?'Recusado: '+r.motivo:'Falhou: '+(r.motivo||r.estado);
+    t.textContent=r.estado==='igual'?(r.pedido==='pedido feito'?'Obras já atualizadas · financeiro em até 1h':'Já está atualizado'):r.estado==='recusado'?'Recusado: '+r.motivo:'Falhou: '+(r.motivo||r.estado);
     b.title=r.estado==='recusado'||r.estado==='erro'?('Planilha → painel: '+r.motivo):b.title;
-    setTimeout(()=>{t.textContent='Sincronizar';b.disabled=false;mostraAtualizado()},r.estado==='igual'?2500:6000)}
+    setTimeout(()=>{t.textContent='Sincronizar';b.disabled=false;mostraAtualizado()},r.estado==='igual'?4000:6000)}
   else if(r.estado==='recusado'||r.estado==='erro'){b.title='Última sincronização automática falhou: '+r.motivo;console.warn('sincPlanilha',r)}
 }
 function showLogin(msg,err){$('phLogin').hidden=false;$('phSair').hidden=true;if(msg)$('phlMsg').textContent=msg;$('phlErr').textContent=err||'';$('phlBtn').disabled=false}
