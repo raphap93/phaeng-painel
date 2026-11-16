@@ -889,7 +889,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   </div>
 </div>
 <button id="phSair" type="button" hidden title="Sair da conta">Sair</button>
-<div id="phVer" aria-hidden="true">v2026-11-15c</div>
+<div id="phVer" aria-hidden="true">v2026-11-16a</div>
 <style>
 #phLogin{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:#f4f1ea;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #phLogin[hidden]{display:none}
@@ -1148,16 +1148,44 @@ async function acessosObra(obraNome){
   const q=await getDocs(query(collection(fs,'acessos'),where('obra','==',slugObra(o))));return q.docs.map(d=>({uid:d.id}));
 }
 let sincEmCurso=false;
+/* ===== Drive ao vivo: obras (pastas) e diário entram no feed no clique de Sincronizar ===== */
+function mergeDrive(feed,drive){
+  if(!Array.isArray(drive)||!drive.length)return feed;
+  const f=JSON.parse(JSON.stringify(feed)),norm=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+  const hoje=new Date().toISOString().slice(0,10);
+  for(const d of drive){
+    if(!d||!d.pastaId||!d.pasta)continue;
+    const base=String(d.pasta).replace(/^\d{4}\s*/,'').trim(),nb=norm(base);
+    let o=f.obras.find(x=>x.pastaId===d.pastaId);
+    if(!o)o=f.obras.find(x=>!x.pastaId&&norm(x.nome)&&(norm(x.nome)===nb||nb.indexOf(norm(x.nome))===0||norm(x.nome).indexOf(nb)===0));
+    if(!o){
+      o={id:'a:o:'+base,nome:base,aditivos:0};f.obras.push(o);
+    }
+    o.pastaId=d.pastaId;
+    if(d.situacao&&o.situacao!==d.situacao){o.situacao=d.situacao;o.status=d.situacao==='executada'?'Concluída':'Em andamento'}
+    if(!o.status)o.status=d.situacao==='executada'?'Concluída':'Em andamento';
+    if(d.ano&&!o.ano)o.ano=d.ano;
+    const g=d.diario;
+    if(g&&Array.isArray(g.etapas)&&g.etapas.length){
+      const av=g.curva.length?g.curva[g.curva.length-1].realizado:g.avanco;o.etapas=g.etapas;o.curva=g.curva;o.avancoDiario=av;o.avanco=Math.round(av*100);o.dadosAte=hoje;
+      if(typeof g.d12==='number'&&g.d12>0){o.contrato=g.d12;delete o.revisar}
+    }
+    if(o.contrato==null)o.contrato=0;
+    if(!(o.contrato>0)&&!o.revisar)o.revisar='Contrato sem definição no diário (Gerencial D12). Definir com o Raphael.';
+  }
+  return f;
+}
 async function sincPlanilha(user,opts){
   opts=opts||{};if(sincEmCurso)return {estado:'ocupado'};sincEmCurso=true;
   try{
     const cred=await user.getIdToken();
-    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),40000);
-    let j;try{const r=await fetch(PONTE,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({t:cred}),signal:ctl.signal});j=await r.json()}finally{clearTimeout(to)}
+    const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),90000);
+    let j;try{const pedir=async dr=>(await fetch(PONTE,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(dr?{t:cred,drive:true}:{t:cred}),signal:ctl.signal})).json();j=await pedir(true);if(j&&j.erro==='drive')j=await pedir(false)}finally{clearTimeout(to)}
     if(!j||j.erro)return {estado:'erro',motivo:(j&&(j.motivo||j.erro))||'sem resposta'};
     if(j.metaF1!=='ok')return {estado:'erro',motivo:'planilha em atualização (meta≠ok)'};
     const [fe,fp]=await Promise.all([lerDoc('empresa','feed'),lerDoc('pessoal','feed')]);
     const atualE=pj(fe),atualP=pj(fp);
+    if(j.drive)try{j.empresa=mergeDrive(j.empresa,j.drive)}catch(e){console.warn('mergeDrive',e)}
     const txtE=JSON.stringify(j.empresa),mudouE=!fe||fe.json!==txtE;
     let mudouP=false,txtP=null;
     if(j.pessoal){txtP=JSON.stringify(j.pessoal);mudouP=!fp||fp.json!==txtP}
