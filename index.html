@@ -889,7 +889,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   </div>
 </div>
 <button id="phSair" type="button" hidden title="Sair da conta">Sair</button>
-<div id="phVer" aria-hidden="true">v2026-11-25a</div>
+<div id="phVer" aria-hidden="true">v2026-11-25b</div>
 <style>
 #phLogin{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:#f4f1ea;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #phLogin[hidden]{display:none}
@@ -1130,7 +1130,7 @@ async function publicarClientes(opts){
   opts=opts||{};const f=pj(await lerDoc('empresa','feed'));if(!f||!Array.isArray(f.obras))return {estado:'sem feed'};
   let esc=0;
   for(const o of f.obras){
-    if(!o||!o.nome||!(o.id||o.nome))continue;const id=slugObra(o),j=JSON.stringify(clienteDoc(f,o));
+    if(!o||!o.nome||!(o.id||o.nome)||OCULTAS_ID.has(o.id))continue;const id=slugObra(o),j=JSON.stringify(clienteDoc(f,o));
     const at=await lerDoc('clientes',id);
     if(at&&at.json===j)continue;
     if(!opts.dry)await setDoc(doc(fs,'clientes',id),{json:j,atualizado:new Date().toISOString()});esc++;
@@ -1335,7 +1335,11 @@ const live=()=>!db.demo;
 const anoMin=()=>{const v=db.config&&db.config.anoMin;return (v===undefined||v===null||v==='')?2026:(Number(v)||0)};
 /* marco zero de 14/11/2026: so Gabriela, Polyanna e as concluidas daqui para frente; obras antigas ficam ocultas (nao apagadas) */
 const MZ_OBSOLETAS=new Set(["Sergio Moreira", "Victor Headão", "João Caetano Magalhães", "Marilia - Rio Tocantins", "Felipe Piv", "Kuzma", "Morretes", "Larissa Araujo", "Edison Martelli - Pinah", "Clientes Gui", "Kuzma - Colina", "Gustavo Martins", "Rogério - RC Odontologia", "Quinta da Figueira", "Nath", "Tatiane", "Isis Piovesan", "Eduardo e Alessandra", "Daniela Setubal", "Marcia Glomb", "Guilherme Golin - Marcallo Tissot 393", "Bruno Stahlke", "Estudio OKAH", "Arq Tiago", "DB Engenharia - Abranches R. Carlos Alberto Ferreira Braga 78", "Eduard e Duda - Pres. Taunay 1106", "Carlos Eduardo - Babilonia"]);
-const OCULTA=o=>/^(obsoleta|orcamento)$/.test((o&&o.situacao)||'')||(!!o&&typeof o.id==='string'&&o.id.startsWith('a:')&&MZ_OBSOLETAS.has(o.nome));
+/* 25/11/2026: Gabriela virou obra única; a Parte 02 fica oculta (sem apagar) e a entrada pendente aparece na agenda da Gabriela */
+const OCULTAS_ID=new Set(['a:o:GabrielaP2']);
+const AG_REMAP={'a:g:gab-etapa2':'Gabriela - José Ingenieros 38'};
+const FEED_AG=()=>(FEED.agenda||[]).map(a=>AG_REMAP[a.id]?Object.assign({},a,{obra:AG_REMAP[a.id]}):a);
+const OCULTA=o=>!!o&&OCULTAS_ID.has(o.id)||/^(obsoleta|orcamento)$/.test((o&&o.situacao)||'')||(!!o&&typeof o.id==='string'&&o.id.startsWith('a:')&&MZ_OBSOLETAS.has(o.nome));
 const foraSet=()=>{const s=new Set();if(!live())return s;const m=anoMin();FEED.obras.concat(db.obras).forEach(o=>{if((o.ano&&Number(o.ano)<m)||OCULTA(o))s.add(o.nome)});return s};
 const semFora=a=>{const f=foraSet();return f.size?a.filter(x=>!x.obra||!f.has(x.obra)):a};
 const L=()=>live()?semFora(db.lanc.concat(FEED.lanc)):db.lanc;
@@ -2070,7 +2074,7 @@ function cronoAjustado(c){const a=db.config.ajCrono[c.id];return a?{...c,inicio:
 function CRONO(){return semFora(live()?(FEED.cronograma||[]):[]).map(cronoAjustado).filter(c=>S.obra===''||S.obra==='__empresa'||c.obra===S.obra)}
 function agItens(from,to){
   const out=[];
-  const todos=semFora((live()?(FEED.agenda||[]):[]).concat(db.agenda));
+  const todos=semFora((live()?FEED_AG():[]).concat(db.agenda));
   todos.forEach(a=>{const dt=db.config.agData&&db.config.agData[a.id]||a.data;if(dt&&dt>=from&&dt<=to&&a.status!=='cancelada')out.push({...a,data:dt,feita:!!(a.status==='feita'||db.config.feitas[a.id])})});
   // regra semanal: toda sexta, relatório e pagamento da mão de obra das obras ativas
   const hoje=todayStr();
@@ -2099,7 +2103,7 @@ function renderAgenda(){
   $('#agDiaT').textContent=dd.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
   $('#agDia').innerHTML=dl.length?dl.map(agChip).join(''):'<div class="empty"><b>Dia livre</b>Nenhum compromisso neste dia.</div>';
   // sem data
-  const sd=semFora((live()?(FEED.agenda||[]):[]).concat(db.agenda)).filter(a=>!a.data&&!(a.status==='feita'||db.config.feitas[a.id])&&(S.obra===''||S.obra==='__empresa'||a.obra===S.obra));
+  const sd=semFora((live()?FEED_AG():[]).concat(db.agenda)).filter(a=>!a.data&&!(a.status==='feita'||db.config.feitas[a.id])&&(S.obra===''||S.obra==='__empresa'||a.obra===S.obra));
   $('#agSem').innerHTML=sd.length?sd.map(a=>agChip({...a,feita:false})).join(''):'<div class="empty"><b>Nada sem data</b>Pendências sem data definida aparecem aqui.</div>';
   $('#agSemT').textContent='A definir ('+sd.length+')';
   // legenda
@@ -2661,7 +2665,7 @@ window.__phaeng={S,get db(){return db},render,go};
     var E=i.E,feitas=E.filter(function(e){return e.pct>=.999}).length,atual=E.find(function(e){return e.pct>0&&e.pct<.999});
     var prox=agItens(hoje,addDays(hoje,7)).filter(function(a){return a.obra===o.nome&&!a.feita})[0],ptxt='',pwhen='Próxima ação';
     if(prox){pwhen='Próxima ação · '+DIAS[new Date(prox.data+'T12:00:00').getDay()].slice(0,3)+' '+dm(prox.data);ptxt=prox.titulo}
-    else{var ab=(FEED.agenda||[]).filter(function(a){return a.obra===o.nome&&a.status==='aberta'})[0];
+    else{var ab=FEED_AG().filter(function(a){return a.obra===o.nome&&a.status==='aberta'})[0];
       if(o.revisar){pwhen='Para resolver';ptxt=o.revisar.split(':')[0]}
       else if(ab){ptxt=ab.titulo}
       else ptxt='Sem pendências'}
