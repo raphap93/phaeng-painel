@@ -889,7 +889,7 @@ body.ro #btnPro,body.ro #btnDesp,body.ro #btnRec,body.ro #btnImp,body.ro #btnMet
   </div>
 </div>
 <button id="phSair" type="button" hidden title="Sair da conta">Sair</button>
-<div id="phVer" aria-hidden="true">v2026-11-16b</div>
+<div id="phVer" aria-hidden="true">v2026-11-25a</div>
 <style>
 #phLogin{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:24px;background:#f4f1ea;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 #phLogin[hidden]{display:none}
@@ -1114,7 +1114,7 @@ function clienteDoc(feed,o){
   const n=v=>Number(v)||0,cv=Array.isArray(o.curva)?o.curva:[];
   const prevOk=cv.length>1&&Math.max.apply(null,cv.map(c=>n(c.previsto)))>=0.9;
   const ref=o.dadosAte||(cv.length?cv[cv.length-1].data:null);
-  const contrato=n(o.contrato)>0?n(o.contrato):null;
+  const contrato=n(o.contrato)>0?Math.round((n(o.contrato)+n(o.aditivos))*100)/100:null;
   const pag=(feed.lanc||[]).filter(l=>l.obra===o.nome&&l.tipo==='entrada'&&!l.interno&&(l.status==='pago'||l.status==='previsto'))
     .map(l=>({data:l.data,tipo:String(l.categoria||'Pagamento'),valor:n(l.valor),status:l.status})).sort((a,b)=>String(a.data).localeCompare(String(b.data)));
   const recebido=pag.filter(p=>p.status==='pago').reduce((t,p)=>t+p.valor,0);
@@ -1123,7 +1123,7 @@ function clienteDoc(feed,o){
   const entregas=(feed.entregas||[]).filter(e=>e.obra===o.nome).map(e=>({data:e.data,tipo:String(e.tipo||'Relatório'),avanco:e.avanco==null?null:n(e.avanco),resumo:String(e.resumo||''),prazo:String(e.prazo||'')}))
     .sort((a,b)=>String(b.data).localeCompare(String(a.data))).slice(0,12);
   return {v:1,obra:{nome:String(o.nome),situacao:o.situacao||null,avanco:o.avanco==null?null:n(o.avanco),dadosAte:ref},
-    fin:{contrato,recebido,saldo:contrato!==null?Math.max(0,contrato-recebido):null,pagamentos:pag},
+    fin:{contrato,recebido,saldo:contrato!==null?Math.round(Math.max(0,contrato-recebido)*100)/100:null,pagamentos:pag},
     etapas,prevOk,curva:cv.map(c=>({data:c.data,previsto:prevOk?n(c.previsto):null,realizado:c.realizado==null?null:n(c.realizado)})),entregas};
 }
 async function publicarClientes(opts){
